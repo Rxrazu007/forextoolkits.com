@@ -1,32 +1,54 @@
-# forextoolkits.com — টুলস
+# forextoolkits.com — টুলস & API
 
-## লাইভ ফরেক্স টুলস
+## ⭐ কাস্টম ফরেক্স টুলস (`/forex-api/`)
 
-| টুল | পেজ ID | স্লাগ | বর্ণনা |
-|---|---|---|---|
-| 🔴 **Currency Strength Meter** | 11 | `currency-strength-meter` | লাইভ কারেন্সি স্ট্রেংথ মিটার — 20k+ chars কন্টেন্ট (JS/ইন্টারঅ্যাকটিভ) |
-| 🔴 **Currency Strength Bars** | 66 | `currency-strength-bars` | কারেন্সি স্ট্রেংথ বার চার্ট |
-| 🔴 **Forex Volatility Bars** | 74 | `forex-volatility-bars` | ফরেক্স ভোলাটিলিটি বার |
-| 🔴 **Volatility Compression** | 79 | `volatility-compression` | ভোলাটিলিটি কম্প্রেশন এনালাইসিস |
-| 🔴 **Supertrend Live** | 138 | `supertrend-live` | সুপারট্রেন্ড লাইভ ইন্ডিকেটর |
+সাইটের মূল বৈশিষ্ট্য — WordPress-এর বাইরে আলাদা `/forex-api/` ফোল্ডারে রাখা।
 
-## প্ল্যাটফর্ম
+| টুল | ফাইল | বর্ণনা |
+|---|---|---|
+| 🔴 Currency Strength Bars | `Currency-Strength-Bars.html` | স্ট্যান্ডঅলোন HTML টুল |
+| 🔴 Forex Volatility Compression Scanner | `Forex-Volatility-Compression-Scanner.html` | ভোলাটিলিটি কম্প্রেশন এনালাইসিস |
+| 🔴 Home Heatmap | `Home-Heatmap.html` | মার্কেট হিটম্যাপ |
+| 🔴 Supertrend Live | `supertrend-live.html` | লাইভ সুপারট্রেন্ড সিগন্যাল |
 
-- **CMS:** WordPress + Kadence Theme
-- **Hosting:** Cloudflare CDN এর আড়ালে
-- **কাস্টম এপিআই:** WP Abilities (`wp-abilities/v1`) — কাস্টম ফিচার/ফাংশনালিটি
+## API ব্যাকএন্ড
 
-## REST API
+| ফাইল | ফাংশন |
+|---|---|
+| `receiver.php` | লাইভ ডাটা রিসিভ/প্রসেস করার PHP API |
+| `forex_data.json` | JSON ফরম্যাটে ফরেক্স ডাটা |
+| `health_status.json` | API হেলথ চেক |
+| `receiver_log.txt` | API কলের লগ |
+
+## WordPress REST API
 
 - **Endpoint:** `https://forextoolkits.com/wp-json/wp/v2/`
-- **Auth:** Application Password (Agent@Zim) — ✅ কাজ করছে
-- **Posts:** `POST /wp/v2/posts` — আর্টিকেল তৈরি
-- **Media:** `POST /wp/v2/media` — ছবি আপলোড
-- **Categories:** শুধু "Uncategorized" আছে — নতুন ক্যাটাগরি তৈরি করতে হবে
+- **Auth:** Application Password (Agent@Zim) — ✅
+- **পোস্ট তৈরি:** `POST /wp/v2/posts`
+- **মিডিয়া আপলোড:** `POST /wp/v2/media`
+- **ক্যাটাগরি:** শুধু "Uncategorized" — নতুন বানাতে হবে
 
-## ভবিষ্যত প্ল্যান
+## ডাটাবেস
 
-- GitHub রিপোজিটরি তৈরি
-- পুরো সাইট ব্যাকআপ
-- ব্লগ পোস্টিং ফ্লো সেটআপ
-- আরও টুলস যোগ/আপডেট
+- **Name:** `foresocz_wp875`
+- **Prefix:** `wpni_`
+- **Host:** localhost
+
+## ফাইল আর্কিটেকচার
+
+```
+/ (WordPress Root)
+├── wp-content/
+│   ├── themes/kadence/
+│   ├── plugins/ (kadence-blocks, litespeed-cache, updraftplus, wpforms-lite, site-offline, duplicate-post)
+│   └── uploads/
+├── forex-api/ ← ⭐ কাস্টম ফরেক্স টুলস
+│   ├── Currency-Strength-Bars.html
+│   ├── Forex-Volatility-Compression-Scanner.html
+│   ├── Home-Heatmap.html
+│   ├── supertrend-live.html
+│   ├── receiver.php
+│   └── *.json, *.txt
+├── wp-config.php
+└── .htaccess
+```

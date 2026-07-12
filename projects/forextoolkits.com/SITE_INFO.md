@@ -6,57 +6,76 @@
 |---|---|
 | **সাইট URL** | `https://forextoolkits.com` |
 | **প্ল্যাটফর্ম** | WordPress |
-| **CDN/Proxy** | Cloudflare (IP: 104.21.62.193, 172.67.138.170) |
-| **REST API** | `https://forextoolkits.com/wp-json/wp/v2/` |
-| **থিম** | Kadence (Kadence Blocks সহ) |
-| **স্ট্যাটাস** | Under Construction (সাধারণ অডিয়েন্সের জন্য উন্মুক্ত নয়) |
+| **CDN/Proxy** | Cloudflare |
+| **Origin IP** | `199.188.200.174` |
+| **থিম** | Kadence |
+| **স্ট্যাটাস** | Under Construction (site-offline plugin) |
 
-## REST API অথেন্টিকেশন
+## REST API (WordPress)
 
-- **User**: Agent@Zim (ID: 2)
-- **Application Password**: ✅ দেওয়া হয়েছে — কাজ করছে
+- **Endpoint:** `https://forextoolkits.com/wp-json/wp/v2/`
+- **Auth:** Application Password — ✅ কাজ করছে
+- **User:** Agent@Zim (ID: 2)
+
+## ডাটাবেস
+
+- **DB Name:** `foresocz_wp875`
+- **DB User:** `foresocz_wp875`
+- **DB Host:** `localhost`
+- **Table Prefix:** `wpni_`
+
+## FTP
+
+- **Host:** `199.188.200.174` (origin IP — Cloudflare বাইপাস)
+- **Port:** 21 (FTPS explicit)
+- **User:** `zim@forextoolkits.com`
+- **স্ট্যাটাস:** ✅ কানেক্টেড
 
 ## পেজ সমূহ (মোট: ১১)
 
-### টুলস/ফিচার পেজ (লাইভ ফরেক্স টুলস)
-| পেজ | স্লাগ | স্ট্যাটাস |
+### লাইভ ফরেক্স টুলস
+| পেজ | স্লাগ | আইডি |
 |---|---|---|
-| 🔴 **Currency Strength Meter** | `currency-strength-meter` | publish |
-| 🔴 **Currency Strength Bars** | `currency-strength-bars` | publish |
-| 🔴 **Forex Volatility Bars** | `forex-volatility-bars` | publish |
-| 🔴 **Volatility Compression** | `volatility-compression` | publish |
-| 🔴 **Supertrend Live** | `supertrend-live` | publish |
+| Currency Strength Meter | `currency-strength-meter` | 11 |
+| Currency Strength Bars | `currency-strength-bars` | 66 |
+| Forex Volatility Bars | `forex-volatility-bars` | 74 |
+| Volatility Compression | `volatility-compression` | 79 |
+| Supertrend Live | `supertrend-live` | 138 |
 
-### স্ট্যান্ডার্ড পেজ
-| পেজ | স্লাগ | স্ট্যাটাস |
-|---|---|---|
-| 🏠 **Home** | `home` | publish |
-| 📞 **Contact Us** | `contact-us` | publish |
-| ℹ️ **About Us** | `about-us` | publish |
-| ⚖️ **Disclaimer** | `disclaimer` | publish |
-| 📋 **Terms & Conditions** | `terms-conditions` | publish |
-| 🔒 **Privacy Policy** | `privacy-policy` | publish |
+### অন্যান্য পেজ
+Home, About Us, Contact Us, Disclaimer, Terms & Conditions, Privacy Policy
 
 ## পোস্ট সমূহ
 
-- **কোনো পোস্ট প্রকাশিত হয়নি** — শুধু "Uncategorized" ক্যাটাগরি আছে (০ পোস্ট)
+- কোনো পোস্ট নেই — শুধু "Uncategorized" ক্যাটাগরি
 
-## ক্যাটাগরি
+## প্লাগিন সমূহ
 
-- Uncategorized (0 posts) — আর কোনো ক্যাটাগরি নেই
-
-## গুরুত্বপূর্ণ প্লাগিন / ফিচার (API থেকে শনাক্ত)
-
-| প্লাগিন/ফিচার | API এন্ডপয়েন্ট |
+| প্লাগিন | ব্যবহার |
 |---|---|
-| Kadence Theme Blocks | `/wp/v2/kadence_header`, `/wp/v2/kadence_navigation` |
-| WP Abilities (কাস্টম ফিচার) | `/wp-abilities/v1/abilities`, `/wp-abilities/v1/categories` |
-| Icons Library | `/wp/v2/icons` |
+| kadence-blocks | Kadence ব্লক বিল্ডার |
+| litespeed-cache | ক্যাশিং/পারফরমেন্স |
+| updraftplus | ব্যাকআপ |
+| wpforms-lite | কন্টাক্ট ফর্ম |
+| site-offline | Coming Soon মোড |
+| duplicate-post | পোস্ট/পেজ কপি |
 
-## পর্যবেক্ষণ
+## ⭐ কাস্টম ফরেক্স API (`/forex-api/`)
 
-- সাইটের মূল ফোকাস **লাইভ ফরেক্স টুলস** — ৫টি টুলস পেজ আছে
-- এখনো কোনো **ব্লগ পোস্ট** বা **ক্যাটাগরি** তৈরি হয়নি
-- সাইট **Under Construction** মোডে আছে — Coming Soon পেজ দেখায়
-- **Home পেজ** আলাদা (slug: home) — Coming Soon মেসেজ দেখাচ্ছে
-- টুলসগুলোর মধ্যে JavaScript/ইন্টারঅ্যাকটিভ ফিচার আছে (20k+ chars content)
+**লোকেশন:** `/forex-api/` (WordPress root-এ আলাদা ফোল্ডার)
+
+| ফাইল | বিবরণ |
+|---|---|
+| `Currency-Strength-Bars.html` | কারেন্সি স্ট্রেংথ বার টুল |
+| `Forex-Volatility-Compression-Scanner.html` | ভোলাটিলিটি কম্প্রেশন স্ক্যানার |
+| `Home-Heatmap.html` | হিটম্যাপ টুল |
+| `supertrend-live.html` | সুপারট্রেন্ড লাইভ |
+| `receiver.php` | লাইভ ডাটা রিসিভার API |
+| `forex_data.json` | ফরেক্স ডাটা ফাইল |
+| `health_status.json` | হেলথ স্ট্যাটাস |
+| `receiver_log.txt` | API লগ |
+
+## GitHub
+
+- **রিপোজিটরি:** `https://github.com/Rxrazu007/forextoolkits.com`
+- **স্ট্যাটাস:** ✅ তৈরি — প্রজেক্ট ডক্স পুশ করা হয়েছে
