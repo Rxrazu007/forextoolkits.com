@@ -1,0 +1,1 @@
+{"primary":{"last_ping":1783883964,"send_count":97818,"pairs_sent":28,"ea_version":"2.10"},"backup":{"last_ping":1783883951,"send_count":82086,"pairs_sent":28,"ea_version":"2.10"},"active_source":"primary","last_failover":{"time":1783820874,"from":"backup","to":"primary","timestamp":"2026-07-12 01:47:54"}}

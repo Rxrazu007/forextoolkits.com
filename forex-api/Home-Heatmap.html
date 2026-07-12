@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forex Currency Heatmap — Live Cross-Rate Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080b12;
+  --bg2:     #0d1120;
+  --bg3:     #131929;
+  --bg4:     #1a2236;
+  --bg5:     #202b40;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.11);
+  --text:    #dde3f0;
+  --text2:   #7a8499;
+  --text3:   #3a4558;
+  --accent:  #4f8eff;
+  --accent2: #00e5b0;
+
+  --sydney:  #34d399;
+  --tokyo:   #f87171;
+  --london:  #4a9eff;
+  --newyork: #f5a623;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* Body transparent করা হয়েছে যেন মূল সাইটের গ্রিড ভেসে ওঠে */
+body {
+  background: transparent !important;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: auto;
+  overflow-x: hidden;
+}
+
+.page { position:relative; z-index:1; max-width:1360px; margin:0 auto; padding:20px 24px; }
+
+/* ── SESSIONS BAR ── */
+.sessions-bar {
+  display:flex; align-items:stretch; gap:1px;
+  background:var(--border); border-radius:12px;
+  overflow:hidden; margin-bottom:18px;
+  border:1px solid var(--border);
+}
+.session-item {
+  flex:1; display:flex; flex-direction:column;
+  padding:10px 14px; background:var(--bg2);
+  position:relative; overflow:hidden; transition:background 0.3s;
+}
+.session-item::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--sc, #4a5568); opacity:0.5; transition:opacity 0.3s;
+}
+.session-item.open { background:var(--bg3); }
+.session-item.open::before { opacity:1; box-shadow:0 0 14px var(--sc); }
+.session-item.weekend { background:var(--bg2); opacity:0.75; }
+.session-item.weekend .session-city    { color:#6b7a96; }
+.session-item.weekend .session-time    { color:#6b7a96; font-size:20px; }
+.session-item.weekend .session-tz      { color:#4a5870; }
+.session-item.weekend .session-hours   { color:#4a5870; }
+.session-item.weekend::before          { background:#2a3448; opacity:1; box-shadow:none; }
+.session-glow {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at 50% 0%, var(--sc, transparent) 0%, transparent 70%);
+  opacity:0; transition:opacity 0.5s;
+}
+.session-item.open .session-glow { opacity:0.07; }
+.session-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.session-city {
+  font-family:'Syne',sans-serif; font-size:12px;
+  font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--sc, var(--text3));
+}
+.session-item.weekend .session-city { color:var(--text3); }
+.session-badge {
+  display:flex; align-items:center; gap:5px;
+  font-size:9px; font-weight:600;
+  letter-spacing:0.5px; text-transform:uppercase;
+  font-family:'DM Mono',monospace;
+}
+.session-badge.open-badge   { color:var(--sc); }
+.session-badge.closed-badge { color:var(--text3); }
+.session-badge.weekend-badge{ color:#6b7a96; }
+.sdot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+.open-badge .sdot { animation:sdotPulse 1.5s infinite; }
+@keyframes sdotPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.session-middle { display:flex; align-items:center; justify-content:space-between; margin-top:4px; margin-bottom:4px; }
+.session-info-right { display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
+.session-time {
+  font-family:'DM Mono',monospace; font-size:20px;
+  font-weight:500; color:var(--text2);
+  letter-spacing:-0.5px; line-height:1; transition:color 0.3s;
+}
+.session-item.open .session-time { color:#fff; }
+.session-item.weekend .session-time { color:var(--text3); }
+.session-tz   { font-size:9px; color:var(--text3); letter-spacing:0.3px; font-family:'DM Mono',monospace; line-height:1.1; }
+.session-hours{ font-size:9px; color:var(--text3); font-family:'DM Mono',monospace; line-height:1.1; }
+.session-prog-wrap { margin-top:6px; height:2px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; }
+.session-prog-bar  { height:100%; border-radius:2px; background:var(--sc,#4a5568); transition:width 1s linear; }
+.weekend-banner {
+  display:none; background:rgba(74,85,104,0.12); border:1px solid rgba(107,122,150,0.25);
+  border-radius:10px; padding:11px 16px; font-size:12px; color:#6b7a96;
+  font-family:'DM Mono',monospace; margin-bottom:16px; text-align:center; letter-spacing:0.5px;
+}
+
+/* ── TICKER SCROLL (ধীর স্পিড ও সুন্দর স্পেসিং) ── */
+.ticker-wrap {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:10px; overflow:hidden; height:40px;
+  display:flex; align-items:center; margin-bottom:18px;
+  position:relative;
+}
+.ticker-wrap::before,
+.ticker-wrap::after {
+  content:''; position:absolute; top:0; bottom:0; width:60px; z-index:2; pointer-events:none;
+}
+.ticker-wrap::before { left:0; background:linear-gradient(to right, var(--bg2), transparent); }
+.ticker-wrap::after  { right:0; background:linear-gradient(to left, var(--bg2), transparent); }
+.ticker-inner { overflow:hidden; flex:1; }
+.ticker-track {
+  display:flex; gap:0;
+  animation:tickerScroll 75s linear infinite; 
+  white-space:nowrap; width:max-content;
+}
+.ticker-track:hover { animation-play-state:paused; }
+@keyframes tickerScroll {
+  0%   { transform:translateX(0); }
+  100% { transform:translateX(-50%); }
+}
+.ticker-item {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:0 24px; border-right:1px solid var(--border);
+  font-size:12px; font-family:'DM Mono',monospace;
+}
+.t-pair  { color:var(--text2); font-weight:600; }
+.t-price { color:var(--text); font-weight:600; }
+.t-chg.up { color:#34d399; }
+.t-chg.dn { color:#f87171; }
+.t-arr { font-size:10px; }
+.ticker-label {
+  padding:0 16px; font-size:10px; font-family:'DM Mono',monospace;
+  color:var(--text3); letter-spacing:1px; text-transform:uppercase;
+  border-right:1px solid var(--border); white-space:nowrap; flex-shrink:0;
+  font-weight: 700;
+}
+
+/* ── HEADER ── */
+.header-merged {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:12px; padding:10px 16px; margin-bottom:18px;
+  flex-wrap:wrap; gap:12px;
+}
+.logo-wrap { display:flex; align-items:center; gap:12px; }
+.logo-icon {
+  width:38px; height:38px; border-radius:10px;
+  background:linear-gradient(135deg,#1a2a50,#0d1830);
+  border:1px solid rgba(79,142,255,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; box-shadow:0 0 20px rgba(79,142,255,0.1);
+}
+.logo-text { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; letter-spacing:-0.3px; color:#fff; }
+.logo-sub  { font-size:9px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-top:1px; font-family:'DM Mono',monospace; }
+.tf-tabs {
+  display:flex; background:#0d1120;
+  border:1px solid rgba(79,142,255,0.15);
+  border-radius:10px; padding:3px; gap:3px;
+}
+.tf-btn {
+  padding:5px 14px; border-radius:6px; border:none;
+  font-family:'DM Mono',monospace; font-size:11px;
+  font-weight:600; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+  color:var(--text2); background:transparent; letter-spacing:0.5px;
+}
+.tf-btn:hover { color:var(--accent); background:rgba(79,142,255,0.05); }
+.tf-btn.active {
+  background:linear-gradient(135deg,#4f8eff,#1a3060); color:#fff;
+  border:1px solid rgba(79,142,255,0.4);
+  box-shadow:0 0 12px rgba(79,142,255,0.3);
+  text-shadow:0 0 5px rgba(255,255,255,0.5);
+}
+.header-right { display:flex; align-items:center; gap:12px; }
+.live-pill {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(0,229,176,0.08); border:1px solid rgba(0,229,176,0.2);
+  border-radius:20px; padding:4px 10px;
+  font-size:10px; font-weight:600; color:var(--accent2);
+  letter-spacing:0.5px; font-family:'DM Mono',monospace;
+}
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--accent2); animation:livePulse 2s infinite; }
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.next-update-pill {
+  font-size:10px; color:var(--text2); font-family:'DM Mono',monospace;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:20px; padding:4px 10px; min-width:110px; text-align:center;
+}
+.updated-time-text { font-size:10px; color:#8f9cae; font-family:'DM Mono',monospace; }
+
+/* ── ERROR BANNER ── */
+.err-banner {
+  display:none; background:rgba(248,113,113,0.08);
+  border:1px solid rgba(248,113,113,0.25); border-radius:10px;
+  padding:12px 16px; font-size:12px; color:#fca5a5;
+  margin-bottom:16px; font-family:'DM Sans',sans-serif;
+  text-align:center; line-height:1.4;
+}
+
+/* ── LOADING ── */
+.loading {
+  position:fixed; inset:0; background:var(--bg); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.load-ring { width:48px; height:48px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.9s linear infinite; margin-bottom:20px; }
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-text { font-family:'Syne',sans-serif; font-size:15px; color:var(--text2); }
+.load-sub  { font-size:11px; color:var(--text3); margin-top:6px; font-family:'DM Mono',monospace; }
+
+/* ── MAIN LAYOUT ── */
+.main-grid {
+  display:grid; grid-template-columns:1fr 260px; gap:18px;
+  align-items:stretch;
+}
+
+/* ── HEATMAP CARD ── */
+.heatmap-card {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:16px; padding:20px;
+  display:flex; flex-direction:column; height:100%;
+}
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+.card-title {
+  font-family:'Syne',sans-serif; font-size:14px; font-weight:600;
+  color:var(--text); letter-spacing:0.3px; margin-bottom:4px;
+}
+.card-sub {
+  font-size:10px; color:var(--text3); font-family:'DM Mono',monospace;
+  letter-spacing:0.3px;
+}
+
+/* ── REFRESH BUTTON ── */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 1px solid rgba(79,142,255,0.25);
+  color: var(--text);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.refresh-btn:hover {
+  background: rgba(79,142,255,0.1);
+  border-color: var(--accent);
+  color: #fff;
+}
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.refresh-icon {
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.4s ease;
+}
+
+/* ── HEATMAP TABLE (নিখুঁত গ্রিড স্ট্রাকচার) ── */
+.hm-scroll { 
+  overflow: hidden; 
+  width: 100%; 
+  display: flex; 
+  flex-direction: column; 
+  flex: 1;
+  min-height: 0; 
+}
+.hm-table {
+  display: grid !important;
+  grid-template-columns: 90px repeat(8, 1fr) !important; 
+  grid-template-rows: 45px repeat(8, 1fr) !important; 
+  gap: 4px !important;
+  width: 100%;
+  height: 100%;
+}
+.hm-table thead, 
+.hm-table tbody, 
+.hm-table tr {
+  display: contents !important;
+}
+.hm-table th, 
+.hm-table td {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.hm-table th.row-label {
+  justify-content: flex-start !important;
+}
+
+/* পতাকা ও লেবেল সাইজ */
+.hm-table th {
+  font-family:'DM Mono',monospace; 
+  font-size:12px;
+  font-weight:700; 
+  color:var(--text);
+  letter-spacing:0.5px;
+}
+.hm-th-inner {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+}
+.hm-flag  { font-size:22px !important; line-height:1; } 
+.hm-curr  { font-size:11px !important; color:#ffffff !important; font-family:'DM Mono',monospace; font-weight:700; letter-spacing:0.5px; }
+
+.hm-row-label {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:'DM Mono',monospace; 
+  font-size:12px;
+  font-weight:700; 
+  color:#ffffff !important;
+}
+.hm-row-label .hm-flag { font-size:20px !important; }
+
+/* ১০০% স্টেবল সেল */
+.hm-cell {
+  border-radius:6px;
+  width: 100% !important;
+  height: 100% !important;
+  text-align:center;
+  cursor:pointer; transition:transform 0.12s, filter 0.12s;
+  position:relative;
+}
+.hm-cell:hover { transform:scale(1.08); filter:brightness(1.15); z-index:10; }
+
+.hm-cell-inner {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  padding:2px;
+  box-sizing:border-box;
+}
+
+.hm-cell-value {
+  font-family:'DM Mono',monospace; 
+  font-size: clamp(9px, 1.1vw + 1px, 13px);
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+/* Self cell */
+.hm-self { background: #1e222d !important; }
+
+/* ── PREMIUM TRADINGVIEW COLOR PALETTE ── */
+.hm-neutral { 
+  background: #1e222d !important; 
+  color: #7a8499 !important; 
+}
+
+/* Green Heat Levels (Positive Change) */
+.hm-up-0 { 
+  background: #ade5ca !important; 
+  color: #0c3220 !important; 
+}
+.hm-up-1 { 
+  background: #42bc7f !important; 
+  color: #0c3220 !important; 
+}
+.hm-up-2 { 
+  background: #089850 !important; 
+  color: #ffffff !important; 
+}
+.hm-up-3 { 
+  background: #056736 !important; 
+  color: #ffffff !important; 
+}
+
+/* Red Heat Levels (Negative Change) */
+.hm-dn-0 { 
+  background: #fccbce !important; 
+  color: #4c1115 !important; 
+}
+.hm-dn-1 { 
+  background: #f77c7f !important; 
+  color: #4c1115 !important; 
+}
+.hm-dn-2 { 
+  background: #f23645 !important; 
+  color: #ffffff !important; 
+}
+.hm-dn-3 { 
+  background: #b22933 !important; 
+  color: #ffffff !important; 
+}
+
+/* ── TOOLTIP ── */
+#hmTooltip {
+  position:fixed; background:var(--bg4); border:1px solid var(--border2);
+  border-radius:10px; padding:12px 14px; pointer-events:none; opacity:0;
+  transition:opacity 0.15s; z-index:9999; min-width:180px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5); font-family:'DM Sans',sans-serif;
+}
+#hmTooltip.visible { opacity:1; }
+.tt-pair  { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff; margin-bottom:8px; }
+.tt-row   { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:4px; font-size:11px; }
+.tt-label { color:var(--text2); }
+.tt-val   { font-family:'DM Mono',monospace; font-weight:600; }
+.tt-val.up  { color:#34d399; }
+.tt-val.dn  { color:#f87171; }
+.tt-val.neu { color:var(--text3); }
+
+/* ── SIDE PANEL (উচ্চ কনট্রাস্ট ও পরিষ্কার লেখা) ── */
+.side-panel {
+  display:flex; flex-direction:column; gap:14px;
+}
+.side-panel .card-sub {
+  color: #94a3b8 !important; 
+}
+.card-strength {
+  flex:1; min-height:0;
+}
+.card {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:14px; padding:16px;
+}
+
+/* Strength ranking */
+.str-row {
+  display:flex; align-items:center; gap:8px; margin-bottom:10px;
+}
+.str-badge {
+  font-size:10px; font-weight:700; width:36px; text-align:center;
+  padding:4px 0; border-radius:4px; flex-shrink:0;
+  font-family:'DM Mono',monospace; letter-spacing:0.5px;
+}
+.str-bar-bg {
+  flex:1; height:5px; background:var(--bg4); border-radius:3px; overflow:hidden;
+}
+.str-bar-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
+.str-val {
+  font-size:11px; font-weight:600; min-width:50px;
+  text-align:right; font-family:'DM Mono',monospace;
+}
+
+/* Pair list */
+.pair-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 0; border-bottom:1px solid var(--border);
+  font-family:'DM Mono',monospace; font-size:10px;
+}
+.pair-item:last-child { border-bottom:none; }
+.pi-pair { color:var(--text2); font-weight:600; }
+.pi-chg  { font-weight:600; }
+.pi-chg.up { color:#34d399; }
+.pi-chg.dn { color:#f87171; }
+.pi-price  { color:#94a3b8 !important; } 
+
+/* Stat pills */
+.stat-row { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.stat-pill {
+  flex:1; min-width:70px; background:var(--bg3); border:1px solid var(--border);
+  border-radius:8px; padding:8px 10px; text-align:center;
+}
+.sp-label { font-size:9px; color:#94a3b8 !important; font-family:'DM Mono',monospace; letter-spacing:0.5px; margin-bottom:3px; }
+.sp-val   { font-size:14px; font-weight:700; font-family:'Syne',sans-serif; }
+.sp-val.up { color:#34d399; }
+.sp-val.dn { color:#f87171; }
+.sp-val.neu{ color:var(--text2); }
+
+/* ── DISCLAIMER ── */
+.disclaimer-bar {
+  display:flex; align-items:flex-start; gap:10px; margin-top:18px;
+  background:rgba(79,142,255,0.04); border:1px solid rgba(79,142,255,0.1);
+  border-radius:10px; padding:12px 16px;
+}
+.disclaimer-icon { font-size:14px; flex-shrink:0; margin-top:1px; }
+.disclaimer-text { font-size:10px; color:var(--text3); line-height:1.6; font-family:'DM Sans',sans-serif; }
+.disclaimer-text strong { color:var(--text2); }
+
+/* ── RESPONSIVE MEDIA QUERIES ── */
+@media(max-width:1100px){
+  .main-grid { grid-template-columns:1fr 230px; }
+}
+@media(max-width:900px) {
+  .main-grid { grid-template-columns:1fr; align-items:start; }
+  .side-panel { display:grid; grid-template-columns:1fr 1fr; }
+  .card-strength { grid-column:1/-1; }
+  
+  /* Safe mobile aspect ratio */
+  .hm-scroll { flex: none; height: auto !important; }
+  .hm-table {
+    display: grid !important;
+    grid-template-columns: 80px repeat(8, 1fr) !important;
+    grid-template-rows: 40px repeat(8, calc((100vw - 160px) / 8 / 1.35)) !important;
+    height: auto !important;
+    flex: none;
+  }
+  .hm-flag { font-size: 18px !important; }
+  .hm-curr, .hm-curr-name { font-size: 11px !important; }
+}
+@media(max-width:768px){
+  .sessions-bar{flex-wrap:wrap;} .session-item{min-width:calc(50% - 1px);}
+  .header-merged{justify-content:center; text-align:center;}
+  .side-panel { grid-template-columns:1fr; }
+  
+  .hm-table { 
+    grid-template-columns: 45px repeat(8, 1fr) !important;
+    grid-template-rows: 35px repeat(8, calc((100vw - 125px) / 8 / 1.35)) !important;
+    gap: 2px !important; 
+  }
+  .hm-flag { font-size: 15px !important; }
+  .hm-curr, .hm-curr-name { font-size: 10px !important; }
+}
+
+@media(max-width:600px) {
+  .val-pct { display: none !important; }
+}
+
+@media(max-width:500px) {
+  .hm-row-label .hm-flag,
+  .hm-th-inner .hm-flag {
+    display: none !important;
+  }
+}
+
+@media(max-width:480px){ .session-item{min-width:100%;} }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="load-ring"></div>
+  <div class="load-text">Loading Currency Heatmap...</div>
+  <div class="load-sub" id="loadSub">Fetching live data from MT4 EA</div>
+</div>
+
+<div id="csm-container" style="display:none;">
+<div class="page">
+
+  <!-- SESSIONS BAR -->
+  <div class="sessions-bar">
+    <div class="session-item" id="sess-sydney" style="--sc:var(--sydney)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">Sydney</div>
+        <div class="session-badge closed-badge" id="badge-sydney"><div class="sdot"></div><span>CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-sydney">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-sydney">AEDT · UTC+11</div>
+          <div class="session-hours" id="hours-sydney">21:00 – 06:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-prog-wrap"><div class="session-prog-bar" id="prog-sydney" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-tokyo" style="--sc:var(--tokyo)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">Tokyo</div>
+        <div class="session-badge closed-badge" id="badge-tokyo"><div class="sdot"></div><span>CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-tokyo">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz">JST · UTC+9</div>
+          <div class="session-hours">00:00 – 09:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-prog-wrap"><div class="session-prog-bar" id="prog-tokyo" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-london" style="--sc:var(--london)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">London</div>
+        <div class="session-badge closed-badge" id="badge-london"><div class="sdot"></div><span>CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-london">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-london">GMT · UTC+0</div>
+          <div class="session-hours" id="hours-london">08:00 – 17:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-prog-wrap"><div class="session-prog-bar" id="prog-london" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-newyork" style="--sc:var(--newyork)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">New York</div>
+        <div class="session-badge closed-badge" id="badge-newyork"><div class="sdot"></div><span>CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-newyork">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-newyork">EST · UTC−5</div>
+          <div class="session-hours" id="hours-newyork">13:00 – 22:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-prog-wrap"><div class="session-prog-bar" id="prog-newyork" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="weekend-banner" id="weekendBanner">🔒 Forex market is closed for the weekend. Trading resumes Sunday 22:00 UTC.</div>
+
+  <!-- TICKER SCROLL -->
+  <div class="ticker-wrap">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-inner">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header-merged">
+    <div class="logo-wrap">
+      <div class="logo-icon">🌡️</div>
+      <div>
+        <div class="logo-text">Forex Currency Heatmap</div>
+        <div class="logo-sub">Cross-Rate % Change · 8 Currencies · Live</div>
+      </div>
+    </div>
+    <div class="tf-tabs">
+      <button class="tf-btn" data-tf="M5">M5</button>
+      <button class="tf-btn" data-tf="M15">M15</button>
+      <button class="tf-btn" data-tf="M30">M30</button>
+      <button class="tf-btn active" data-tf="H1">H1</button>
+      <button class="tf-btn" data-tf="H4">H4</button>
+      <button class="tf-btn" data-tf="D1">D1</button>
+    </div>
+    <div class="header-right">
+      <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+      <div class="next-update-pill" id="nextUpdate">Connecting...</div>
+      <div class="updated-time-text">Updated: <span id="lastUpdated">--</span></div>
+    </div>
+  </div>
+
+  <div class="err-banner" id="errBanner"></div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- HEATMAP PANEL -->
+    <div class="heatmap-card">
+      <div class="card-header-row">
+        <div>
+          <div class="card-title">Cross-Rate % Change — <span id="tfLabel">H1</span></div>
+          <div class="card-sub">Row = Base Currency · Column = Quote Currency · Value = % price change over selected timeframe</div>
+        </div>
+        <button class="refresh-btn" onclick="manualRefresh()" id="refreshBtn" title="Force Refresh Live Data">
+          <span class="refresh-icon" id="refreshIcon">🔄</span> Refresh
+        </button>
+      </div>
+      <div class="hm-scroll">
+        <table class="hm-table" id="hmTable"></table>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel" style="display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Currency Strength — stretches to fill -->
+      <div class="card card-strength" style="flex:1;">
+        <div class="card-title" style="margin-bottom:4px;">Currency Strength</div>
+        <div class="card-sub" style="margin-bottom:14px;">Avg % vs all 7 others</div>
+        <div id="strengthList"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">Market Stats</div>
+        <div class="stat-row" id="statRow"></div>
+      </div>
+
+      <!-- Top movers -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Top Movers</div>
+        <div class="card-sub" style="margin-bottom:10px;">Strongest pair moves</div>
+        <div id="topMovers"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer-bar">
+    <span class="disclaimer-icon">⚠</span>
+    <p class="disclaimer-text">
+      <strong>Disclaimer:</strong> This heatmap displays percentage price changes across currency pairs and is intended <strong>for informational and educational purposes only.</strong>
+      It does <strong>not</strong> constitute financial advice or trading signals.
+      Always conduct your own analysis and consult a qualified financial advisor before entering any trade.
+      <strong>Trading forex involves significant risk of loss.</strong>
+    </p>
+  </div>
+
+</div>
+</div>
+
+<div id="hmTooltip">
+  <div class="tt-pair" id="ttPair">EUR/USD</div>
+  <div class="tt-row"><span class="tt-label">Change</span><span class="tt-val" id="ttChg">--</span></div>
+  <div class="tt-row"><span class="tt-label">Price</span><span class="tt-val neu" id="ttPrice">--</span></div>
+  <div class="tt-row"><span class="tt-label">Open</span><span class="tt-val neu" id="ttOpen">--</span></div>
+  <div class="tt-row"><span class="tt-label">Timeframe</span><span class="tt-val neu" id="ttTF">--</span></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
+const DATA_URL   = 'https://forextoolkits.com/forex-api/forex_data.json';
+const REFRESH_MS = 30000;
+
+const CURRENCIES = ['EUR','USD','GBP','JPY','AUD','CAD','CHF','NZD'];
+const FLAGS = {
+  EUR:'🇪🇺', USD:'🇺🇸', GBP:'🇬🇧', JPY:'🇯🇵',
+  AUD:'🇦🇺', CAD:'🇨🇦', CHF:'🇨🇭', NZD:'🇳🇿'
+};
+const CURR_COLORS = {
+  EUR:'#4a9eff', USD:'#34d399', GBP:'#a78bfa',
+  JPY:'#f5a623', AUD:'#f472b6', CAD:'#f87171',
+  CHF:'#22d3ee', NZD:'#e2e8f0'
+};
+
+const PAIR_MAP = [
+  ['EURUSD','EUR','USD'], ['GBPUSD','GBP','USD'], ['USDJPY','USD','JPY'],
+  ['USDCHF','USD','CHF'], ['AUDUSD','AUD','USD'], ['USDCAD','USD','CAD'],
+  ['NZDUSD','NZD','USD'], ['EURGBP','EUR','GBP'], ['EURJPY','EUR','JPY'],
+  ['EURCHF','EUR','CHF'], ['EURAUD','EUR','AUD'], ['EURCAD','EUR','CAD'],
+  ['EURNZD','EUR','NZD'], ['GBPJPY','GBP','JPY'], ['GBPCHF','GBP','CHF'],
+  ['GBPAUD','GBP','AUD'], ['GBPCAD','GBP','CAD'], ['GBPNZD','GBP','NZD'],
+  ['CHFJPY','CHF','JPY'], ['AUDJPY','AUD','JPY'], ['CADJPY','CAD','JPY'],
+  ['NZDJPY','NZD','JPY'], ['AUDCHF','AUD','CHF'], ['CADCHF','CAD','CHF'],
+  ['NZDCHF','NZD','CHF'], ['AUDCAD','AUD','CAD'], ['AUDNZD','AUD','NZD'],
+  ['NZDCAD','NZD','CAD']
+];
+
+const TF_LABELS = {M5:'5 Min', M15:'15 Min', M30:'30 Min', H1:'1 Hour', H4:'4 Hour', D1:'Daily'};
+
+let currentTF  = 'H1';
+let liveData   = null;
+let cdTimer    = null;
+let countdown  = 30;
+let refreshTimeout = null;
+let failureCount = 0; // পরপর ব্যর্থতা ট্র্যাক করার ভেরিয়েবল
+
+// ═══════════════════════════════════════════
+//  DST HELPERS
+// ═══════════════════════════════════════════
+function lastSunday(year, month) {
+  const d = new Date(Date.UTC(year, month + 1, 0));
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  return d;
+}
+function nthSunday(year, month, n) {
+  const d = new Date(Date.UTC(year, month, 1));
+  const dayOfWeek = d.getUTCDay();
+  const daysUntilSun = (7 - dayOfWeek) % 7;
+  d.setUTCDate(1 + daysUntilSun + (n - 1) * 7);
+  return d;
+}
+function isUKSummerTime(date) {
+  const y = date.getUTCFullYear();
+  return date >= lastSunday(y, 2) && date < lastSunday(y, 9);
+}
+function isUSSummerTime(date) {
+  const y = date.getUTCFullYear();
+  return date >= nthSunday(y, 2, 2) && date < nthSunday(y, 10, 1);
+}
+function isAustraliaSummerTime(date) {
+  const y = date.getUTCFullYear();
+  return (date >= nthSunday(y, 9, 1)) || (date < nthSunday(y, 3, 1));
+}
+function getSessionConfig(now) {
+  const ukDST = isUKSummerTime(now), usDST = isUSSummerTime(now), auDST = isAustraliaSummerTime(now);
+  return {
+    sydney:  { open: auDST?21:22, close: auDST?6:7,   tzLabel: auDST?'AEDT · UTC+11':'AEST · UTC+10', hoursLabel: auDST?'21:00 – 06:00 UTC':'22:00 – 07:00 UTC', offset: auDST?11:10 },
+    tokyo:   { open: 0,           close: 9,            tzLabel: 'JST · UTC+9',                          hoursLabel: '00:00 – 09:00 UTC',                            offset: 9 },
+    london:  { open: ukDST?7:8,   close: ukDST?16:17,  tzLabel: ukDST?'BST · UTC+1':'GMT · UTC+0',     hoursLabel: ukDST?'07:00 – 16:00 UTC':'08:00 – 17:00 UTC', offset: ukDST?1:0 },
+    newyork: { open: usDST?12:13, close: usDST?21:22,  tzLabel: usDST?'EDT · UTC−4':'EST · UTC−5',     hoursLabel: usDST?'12:00 – 21:00 UTC':'13:00 – 22:00 UTC', offset: usDST?-4:-5 },
+  };
+}
+function isWeekend(utcNow) {
+  const day=utcNow.getUTCDay(), hour=utcNow.getUTCHours(), minutes=utcNow.getUTCMinutes(), utcDec=hour+minutes/60;
+  if(day===6) return true;
+  if(day===5&&utcDec>=22) return true;
+  if(day===0&&utcDec<22) return true;
+  return false;
+}
+function isSessionOpen(utcHour, utcMin, openH, closeH) {
+  const t=utcHour+utcMin/60;
+  return openH<closeH ? (t>=openH&&t<closeH) : (t>=openH||t<closeH);
+}
+function sessionProgress(utcHour, utcMin, openH, closeH) {
+  const t=utcHour+utcMin/60;
+  let elapsed, total;
+  if(openH<closeH){ total=closeH-openH; elapsed=t-openH; }
+  else { total=(24-openH)+closeH; elapsed=t>=openH?t-openH:(24-openH)+t; }
+  return Math.min(100,Math.max(0,(elapsed/total)*100));
+}
+
+function updateClocks() {
+  const now=new Date(), utcNow=new Date(now.getTime()), cfg=getSessionConfig(utcNow);
+  const utcH=utcNow.getUTCHours(), utcM=utcNow.getUTCMinutes(), weekend=isWeekend(utcNow);
+  let mt4Status=null;
+  if(liveData?.market_status) mt4Status=liveData.market_status;
+  const banner=document.getElementById('weekendBanner');
+  if(banner) banner.style.display=weekend?'block':'none';
+  ['sydney','tokyo','london','newyork'].forEach(key => {
+    const scfg=cfg[key], el=document.getElementById('sess-'+key); if(!el) return;
+    const timeEl=document.getElementById('time-'+key), badgeEl=document.getElementById('badge-'+key),
+          progEl=document.getElementById('prog-'+key), tzEl=document.getElementById('tz-'+key),
+          hoursEl=document.getElementById('hours-'+key);
+    if(tzEl)    tzEl.textContent    = scfg.tzLabel;
+    if(hoursEl) hoursEl.textContent = scfg.hoursLabel;
+    const localMs=utcNow.getTime()+scfg.offset*3600000, localDate=new Date(localMs);
+    const hh=String(localDate.getUTCHours()).padStart(2,'0'), mm=String(localDate.getUTCMinutes()).padStart(2,'0'), ss=String(localDate.getUTCSeconds()).padStart(2,'0');
+    timeEl.textContent=`${hh}:${mm}:${ss}`;
+    let isOpen=false;
+    if(weekend) isOpen=false;
+    else if(mt4Status&&!mt4Status.is_open) isOpen=false;
+    else if(mt4Status&&mt4Status.sessions) { const mt4Key=key==='newyork'?'new_york':key; isOpen=mt4Status.sessions[mt4Key]===true; }
+    else isOpen=isSessionOpen(utcH,utcM,scfg.open,scfg.close);
+    el.classList.remove('open','weekend'); badgeEl.className='session-badge';
+    if(weekend){ el.classList.add('weekend'); badgeEl.classList.add('weekend-badge'); badgeEl.innerHTML='<div class="sdot"></div><span>WEEKEND</span>'; progEl.style.width='0%'; }
+    else if(isOpen){ el.classList.add('open'); badgeEl.classList.add('open-badge'); badgeEl.innerHTML='<div class="sdot"></div><span>OPEN</span>'; progEl.style.width=sessionProgress(utcH,utcM,scfg.open,scfg.close)+'%'; }
+    else{ badgeEl.classList.add('closed-badge'); badgeEl.innerHTML='<div class="sdot"></div><span>CLOSED</span>'; progEl.style.width='0%'; }
+  });
+}
+setInterval(updateClocks, 1000);
+updateClocks();
+
+// ═══════════════════════════════════════════
+//  HEATMAP CALCULATION ENGINE
+// ═══════════════════════════════════════════
+function getPairChange(sym, tf) {
+  if (!liveData?.pairs?.[sym]?.tf?.[tf]) return null;
+  const closes = liveData.pairs[sym].tf[tf].c;
+  if (!closes || closes.length < 2) return null;
+  const open  = closes[0];
+  const close = closes[closes.length - 1];
+  if (!open || open === 0) return null;
+  return ((close - open) / open) * 100;
+}
+
+function getPairPrice(sym, tf) {
+  if (!liveData?.pairs?.[sym]?.tf?.[tf]) return null;
+  const closes = liveData.pairs[sym].tf[tf].c;
+  return closes?.[closes.length - 1] ?? null;
+}
+
+function getPairOpen(sym, tf) {
+  if (!liveData?.pairs?.[sym]?.tf?.[tf]) return null;
+  return liveData.pairs[sym].tf[tf].c?.[0] ?? null;
+}
+
+function buildMatrix(tf) {
+  const matrix = {};
+  CURRENCIES.forEach(b => {
+    matrix[b] = {};
+    CURRENCIES.forEach(q => {
+      if (b === q) { matrix[b][q] = null; return; }
+      const direct = b + q;
+      const inverse = q + b;
+      const directChange = getPairChange(direct, tf);
+      if (directChange !== null) {
+        matrix[b][q] = { chg: directChange, price: getPairPrice(direct, tf), open: getPairOpen(direct, tf), sym: direct };
+        return;
+      }
+      const invChange = getPairChange(inverse, tf);
+      if (invChange !== null) {
+        matrix[b][q] = { chg: -invChange, price: getPairPrice(inverse, tf) ? 1/getPairPrice(inverse, tf) : null, open: null, sym: inverse + '_inv' };
+        return;
+      }
+      matrix[b][q] = { chg: null, price: null, open: null, sym: null };
+    });
+  });
+  return matrix;
+}
+
+function computeStrength(matrix) {
+  const scores = {};
+  CURRENCIES.forEach(b => {
+    let sum = 0, count = 0;
+    CURRENCIES.forEach(q => {
+      if (b !== q && matrix[b][q]?.chg !== null && matrix[b][q]?.chg !== undefined) {
+        sum += matrix[b][q].chg;
+        count++;
+      }
+    });
+    scores[b] = count ? sum / count : 0;
+  });
+  return scores;
+}
+
+// ═══════════════════════════════════════════
+//  DYNAMIC TV STRENGTH CLASSIFIER
+// ═══════════════════════════════════════════
+function getCellClass(chg, tf) {
+  if (chg === null || chg === undefined || isNaN(chg)) return 'hm-neutral';
+
+  let t3, t2, t1;
+  if (['M5', 'M15', 'M30'].includes(tf)) {
+    t3 = 0.15;
+    t2 = 0.08;
+    t1 = 0.03;
+  } else if (['H1', 'H4'].includes(tf)) {
+    t3 = 0.50;
+    t2 = 0.25;
+    t1 = 0.10;
+  } else {
+    t3 = 0.80;
+    t2 = 0.40;
+    t1 = 0.15;
+  }
+
+  if (chg >= t3) return 'hm-up-3';
+  if (chg >= t2) return 'hm-up-2';
+  if (chg >= t1) return 'hm-up-1';
+  if (chg >= 0.02) return 'hm-up-0';
+  if (chg > -0.02) return 'hm-neutral';
+  if (chg > -t1) return 'hm-dn-0';
+  if (chg > -t2) return 'hm-dn-1';
+  if (chg > -t3) return 'hm-dn-2';
+  return 'hm-dn-3';
+}
+
+// ═══════════════════════════════════════════
+//  RENDER — HEATMAP TABLE
+// ═══════════════════════════════════════════
+function renderHeatmap() {
+  const matrix = buildMatrix(currentTF);
+  const tbl = document.getElementById('hmTable');
+
+  // Header row
+  let html = '<thead><tr><th class="row-label"></th>';
+  CURRENCIES.forEach(c => {
+    html += `<th><div class="hm-th-inner"><span class="hm-flag">${FLAGS[c]}</span><span class="hm-curr">${c}</span></div></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  CURRENCIES.forEach(base => {
+    html += `<tr><th class="row-label"><div class="hm-row-label"><span class="hm-flag">${FLAGS[base]}</span><span class="hm-curr-name">${base}</span></div></th>`;
+    CURRENCIES.forEach(quote => {
+      if (base === quote) {
+        html += `<td class="hm-cell hm-self"><div class="hm-cell-inner"></div></td>`;
+        return;
+      }
+      const data = matrix[base][quote];
+      const chg  = data?.chg;
+      const cls  = getCellClass(chg, currentTF);
+      
+      let cellInnerHtml = '';
+      if (chg !== null && chg !== undefined && !isNaN(chg)) {
+        const sign = chg >= 0 ? '+' : '';
+        const chgStr = chg.toFixed(2);
+        cellInnerHtml = `
+          <div class="hm-cell-inner">
+            <div class="hm-cell-value">
+              <span class="val-num">${sign}${chgStr}</span><span class="val-pct">%</span>
+            </div>
+          </div>
+        `;
+      } else {
+        cellInnerHtml = `
+          <div class="hm-cell-inner">
+            <div class="hm-cell-value">—</div>
+          </div>
+        `;
+      }
+
+      const price  = data?.price  != null ? (data.price < 10 ? data.price.toFixed(5) : data.price.toFixed(3)) : '—';
+      const openP  = data?.open   != null ? (data.open  < 10 ? data.open.toFixed(5)  : data.open.toFixed(3))  : '—';
+      const sym    = data?.sym ?? (base+quote);
+      html += `<td class="hm-cell ${cls}"
+        data-base="${base}" data-quote="${quote}"
+        data-chg="${chg !== null ? chg.toFixed(4) : ''}"
+        data-price="${price}" data-open="${openP}" data-sym="${sym}"
+        onmouseenter="showTT(event,this)" onmouseleave="hideTT()"
+      >${cellInnerHtml}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+
+  renderStrength(matrix);
+  renderTopMovers(matrix);
+  renderStats(matrix);
+}
+
+// ═══════════════════════════════════════════
+//  RENDER — STRENGTH BARS
+// ═══════════════════════════════════════════
+function renderStrength(matrix) {
+  const scores = computeStrength(matrix);
+  const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+  const maxAbs = Math.max(...sorted.map(([,v]) => Math.abs(v))) || 0.01;
+
+  let html = '';
+  sorted.forEach(([curr, val]) => {
+    const pct = Math.round(((val / maxAbs) + 1) * 50);
+    const isUp = val >= 0;
+    const barColor = isUp ? '#089850' : '#f23645';
+    const valColor = isUp ? '#34d399' : '#f87171';
+    const valStr = (isUp ? '+' : '') + val.toFixed(3) + '%';
+    html += `<div class="str-row">
+      <div class="str-badge" style="background:${CURR_COLORS[curr]}22;color:${CURR_COLORS[curr]}">${curr}</div>
+      <div class="str-bar-bg"><div class="str-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="str-val" style="color:${valColor}">${valStr}</div>
+    </div>`;
+  });
+  document.getElementById('strengthList').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+//  RENDER — TOP MOVERS
+// ═══════════════════════════════════════════
+function renderTopMovers(matrix) {
+  const moves = [];
+  PAIR_MAP.forEach(([sym, base, quote]) => {
+    const data = matrix[base]?.[quote];
+    if (!data || data.chg === null || data.chg === undefined) return;
+    moves.push({ sym, base, quote, chg: data.chg, price: data.price });
+  });
+  moves.sort((a,b) => Math.abs(b.chg) - Math.abs(a.chg));
+  const top = moves.slice(0, 8);
+
+  let html = '';
+  top.forEach(m => {
+    const isUp = m.chg >= 0;
+    const cls  = isUp ? 'up' : 'dn';
+    const sign = isUp ? '+' : '';
+    const priceStr = m.price != null ? (m.price < 10 ? m.price.toFixed(5) : m.price.toFixed(3)) : '—';
+    html += `<div class="pair-item">
+      <span class="pi-pair">${m.base}/${m.quote}</span>
+      <span class="pi-price">${priceStr}</span>
+      <span class="pi-chg ${cls}">${sign}${m.chg.toFixed(2)}%</span>
+    </div>`;
+  });
+  document.getElementById('topMovers').innerHTML = html || '<div style="font-size:10px;color:var(--text3);padding:8px 0;font-family:\'DM Mono\'">No data available</div>';
+}
+
+// ═══════════════════════════════════════════
+//  RENDER — MARKET STATS
+// ═══════════════════════════════════════════
+function renderStats(matrix) {
+  const moves = [];
+  PAIR_MAP.forEach(([sym, base, quote]) => {
+    const data = matrix[base]?.[quote];
+    if (!data || data.chg === null || data.chg === undefined) return;
+    moves.push(data.chg);
+  });
+  if (!moves.length) return;
+
+  const bullish = moves.filter(v => v > 0.05).length;
+  const bearish = moves.filter(v => v < -0.05).length;
+  const neutral = moves.length - bullish - bearish;
+  const avgMove = moves.reduce((a,b) => a + Math.abs(b), 0) / moves.length;
+
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-pill">
+      <div class="sp-label">BULLISH</div>
+      <div class="sp-val up">${bullish}</div>
+    </div>
+    <div class="stat-pill">
+      <div class="sp-label">BEARISH</div>
+      <div class="sp-val dn">${bearish}</div>
+    </div>
+    <div class="stat-pill">
+      <div class="sp-label">AVG MOVE</div>
+      <div class="sp-val neu">${avgMove.toFixed(2)}%</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  RENDER — TICKER
+// ═══════════════════════════════════════════
+function renderTicker() {
+  if (!liveData?.pairs) return;
+  const tickers = [];
+  PAIR_MAP.forEach(([sym, base, quote]) => {
+    const tf = currentTF;
+    const chg = getPairChange(sym, tf);
+    const price = getPairPrice(sym, tf);
+    if (chg === null || price === null) return;
+    tickers.push({ sym: base+'/'+quote, price, chg });
+  });
+  if (!tickers.length) return;
+
+  const items = [...tickers, ...tickers];
+  const html = items.map(t => {
+    const isUp = t.chg >= 0;
+    const cls  = isUp ? 'up' : 'dn';
+    const sign = isUp ? '▲' : '▼';
+    const priceStr = t.price < 10 ? t.price.toFixed(5) : t.price.toFixed(3);
+    const chgStr   = (isUp ? '+' : '') + t.chg.toFixed(2) + '%';
+    return `<div class="ticker-item">
+      <span class="t-pair">${t.sym}</span>
+      <span class="t-price">${priceStr}</span>
+      <span class="t-arr ${cls}" style="color:${isUp?'#34d399':'#f87171'}">${sign}</span>
+      <span class="t-chg ${cls}">${chgStr}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('tickerTrack').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+//  TOOLTIP
+// ═══════════════════════════════════════════
+const tooltip = document.getElementById('hmTooltip');
+function showTT(e, el) {
+  const base  = el.dataset.base;
+  const quote = el.dataset.quote;
+  const chg   = parseFloat(el.dataset.chg);
+  const price = el.dataset.price;
+  const open  = el.dataset.open;
+  const isUp  = chg >= 0;
+  const cls   = !isNaN(chg) ? (isUp ? 'up' : 'dn') : 'neu';
+
+  document.getElementById('ttPair').textContent = FLAGS[base] + ' ' + base + ' / ' + FLAGS[quote] + ' ' + quote;
+  const ttChg = document.getElementById('ttChg');
+  ttChg.textContent = !isNaN(chg) ? (isUp?'+':'') + chg.toFixed(4) + '%' : '—';
+  ttChg.className = 'tt-val ' + cls;
+  document.getElementById('ttPrice').textContent = price || '—';
+  document.getElementById('ttOpen').textContent  = open  || '—';
+  document.getElementById('ttTF').textContent    = TF_LABELS[currentTF] || currentTF;
+
+  tooltip.classList.add('visible');
+  moveTT(e);
+}
+function moveTT(e) {
+  const x = e.clientX + 14;
+  const y = e.clientY - 10;
+  tooltip.style.left = Math.min(x, window.innerWidth - 210) + 'px';
+  tooltip.style.top  = Math.max(y, 10) + 'px';
+}
+function hideTT() { tooltip.classList.remove('visible'); }
+document.addEventListener('mousemove', e => {
+  if (tooltip.classList.contains('visible')) moveTT(e);
+});
+
+// ═══════════════════════════════════════════
+//  DATA FETCH & AUTO REFRESH (লুপ-ফ্রি সাইলেন্ট রিকভারি)
+// ═══════════════════════════════════════════
+function startCountdown() {
+  countdown = REFRESH_MS / 1000;
+  if (window.cdTimer) clearInterval(window.cdTimer);
+  window.cdTimer = setInterval(() => {
+    countdown--;
+    const el = document.getElementById('nextUpdate');
+    if (el) el.textContent = `Next update: ${countdown}s`;
+    if (countdown <= 0) { clearInterval(window.cdTimer); }
+  }, 1000);
+}
+
+async function refresh() {
+  clearTimeout(refreshTimeout);
+  const errBanner = document.getElementById('errBanner');
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    liveData = await res.json();
+
+    // সাইলেন্ট রিকভারি লজিক: ডেটা লোড সফল হলে ফেইলর কাউন্টার ০
+    failureCount = 0;
+    errBanner.style.display = 'none';
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('csm-container').style.display = 'block';
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+
+    renderHeatmap();
+    renderTicker();
+    startCountdown();
+  } catch (err) {
+    failureCount++; // ব্যর্থ হলে কাউন্টার বাড়ছে
+    
+    // লোডিং স্ক্রিন হাইড ও কন্টেইনার শো করা হচ্ছে (যাতে পুরানো ডেটা স্ক্রিনে থাকে)
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('csm-container').style.display = 'block';
+    
+    // কেবল পরপর ৩ বার (১.৫ মিনিট) ফেইল হলে এরর মেসেজ শো করবে
+    if (failureCount >= 3) {
+      errBanner.style.display = 'block';
+      errBanner.textContent = '⚠ Network unstable. Attempting to reconnect... (Retrying in 30s)';
+    }
+    
+    document.getElementById('nextUpdate').textContent = 'Retrying in 30s';
+    startCountdown();
+  }
+  // লুপ ডবলিং ছাড়া সائلেন্টলি রিট্রাই করার নিরাপদ সেট-টাইমআউট
+  refreshTimeout = setTimeout(refresh, REFRESH_MS);
+}
+
+// ═══════════════════════════════════════════
+//  MANUAL REFRESH
+// ═══════════════════════════════════════════
+async function manualRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  if (btn) btn.disabled = true;
+  if (icon) {
+    icon.style.transform = 'rotate(360deg)';
+    icon.style.transition = 'transform 0.6s ease';
+  }
+  
+  await refresh();
+  
+  setTimeout(() => {
+    if (btn) btn.disabled = false;
+    if (icon) {
+      icon.style.transform = 'none';
+      icon.style.transition = 'none';
+    }
+  }, 600);
+}
+
+// ═══════════════════════════════════════════
+//  TIMEFRAME TABS
+// ═══════════════════════════════════════════
+document.querySelectorAll('.tf-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTF = btn.dataset.tf;
+    document.getElementById('tfLabel').textContent = TF_LABELS[currentTF];
+    if (liveData) { renderHeatmap(); renderTicker(); }
+  });
+});
+
+// ═══════════════════════════════════════════
+//  RESIZE & WP HEIGHT OBSERVERS
+// ═══════════════════════════════════════════
+window.addEventListener('resize', () => {
+  reportHeight();
+});
+
+if (typeof ResizeObserver !== 'undefined') {
+  const container = document.getElementById('csm-container');
+  if (container) {
+    const ro = new ResizeObserver(() => {
+      reportHeight();
+    });
+    ro.observe(container);
+  }
+}
+
+function reportHeight() {
+  const container = document.getElementById('csm-container');
+  if (!container) return;
+  const height = container.offsetHeight;
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'csm-height', height: height + 20 }, '*');
+  }
+}
+
+refresh();
+</script>
+</body>
+</html>

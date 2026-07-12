@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Currency Strength Bars — Live RSI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #080b12;
+  --bg2:       #0d1120;
+  --bg3:       #131929;
+  --bg4:       #1a2236;
+  --bg5:       #202b40;
+  --border:    rgba(255,255,255,0.06);
+  --border2:   rgba(255,255,255,0.11);
+  --text:      #dde3f0;
+  --text2:     #7a8499;
+  --text3:     #3a4558;
+  --accent:    #4f8eff;
+  --accent2:   #00e5b0;
+  --pos:       #22c37a;
+  --neg:       #e84c7d;
+  --sydney:  #34d399;
+  --tokyo:   #f87171;
+  --london:  #4a9eff;
+  --newyork: #f5a623;
+
+  /* Pixel Perfect Row Alignments */
+  --row-left-space: 78px;   
+  --row-right-space: 86px;  
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");opacity:0.4;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(79,142,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,255,0.025) 1px,transparent 1px);background-size:48px 48px;}
+.page{position:relative;z-index:1;max-width:1360px;margin:0 auto;padding:20px 24px;}
+
+/* LOADING */
+.loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.6s;}
+.load-ring{width:48px;height:48px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:20px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-text{font-family:'Syne',sans-serif;font-size:15px;color:var(--text2);}
+.load-sub{font-size:11px;color:var(--text3);margin-top:6px;font-family:'DM Mono',monospace;}
+
+/* ── SESSIONS BAR ── */
+.sessions-bar {
+  display:flex; align-items:stretch; gap:1px;
+  background:var(--border); border-radius:12px;
+  overflow:hidden; margin-bottom:18px;
+  border:1px solid var(--border);
+}
+.session-item {
+  flex:1; display:flex; flex-direction:column;
+  padding:10px 14px; background:var(--bg2);
+  position:relative; overflow:hidden; transition:background 0.3s;
+}
+.session-item::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--session-color, #4a5568); opacity:0.5; transition:opacity 0.3s;
+}
+.session-item.active { background:var(--bg3); }
+.session-item.active::before { opacity:1; box-shadow:0 0 14px var(--session-color); }
+.session-item.weekend { background:var(--bg2); opacity:0.75; }
+
+/* Weekend text overrides */
+.session-item.weekend .session-city    { color:#6b7a96; }
+.session-item.weekend .session-time    { color:#6b7a96; }
+.session-item.weekend .session-tz      { color:#4a5870; }
+.session-item.weekend .session-hours   { color:#4a5870; }
+.session-item.weekend::before          { background:#2a3448; opacity:1; box-shadow:none; }
+
+.session-glow {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at 50% 0%, var(--session-color, transparent) 0%, transparent 70%);
+  opacity:0; transition:opacity 0.5s;
+}
+.session-item.active .session-glow { opacity:0.07; }
+
+.session-top {
+  display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:4px;
+}
+.session-city {
+  font-family:'Syne',sans-serif; font-size:12px;
+  font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--session-color, var(--text3));
+}
+.session-status {
+  display:flex; align-items:center; gap:5px;
+  font-size:9px; font-weight:600;
+  letter-spacing:0.5px; text-transform:uppercase;
+  font-family:'DM Mono',monospace;
+}
+.session-status.open { color:var(--session-color); }
+.session-status.closed { color:var(--text3); }
+.session-status.weekend-badge { color:#6b7a96; }
+
+.session-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:currentColor;
+}
+.session-status.open .session-dot { animation:sdotPulse 1.5s infinite; }
+@keyframes sdotPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.session-middle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.session-time {
+  font-family:'DM Mono',monospace; font-size:20px;
+  font-weight:500; color:var(--text2);
+  letter-spacing:-0.5px; line-height:1;
+  transition:color 0.3s;
+}
+.session-item.active .session-time { color:#fff; }
+.session-item.weekend .session-time { color:var(--text3); }
+
+.session-info-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.session-tz {
+  font-size:9px; color:var(--text3);
+  letter-spacing:0.3px; font-family:'DM Mono',monospace;
+  line-height: 1.1;
+}
+.session-hours {
+  font-size:9px; color:var(--text3);
+  font-family:'DM Mono',monospace;
+  line-height: 1.1;
+}
+.session-progress-wrap {
+  margin-top:6px; height:2px;
+  background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden;
+}
+.session-progress-bar {
+  height:100%; border-radius:2px;
+  background:var(--session-color, #4a5568);
+  transition:width 1s linear;
+}
+
+/* WEEKEND BANNER */
+.weekend-banner {
+  display:none;
+  background:rgba(74,85,104,0.12);
+  border:1px solid rgba(107,122,150,0.25);
+  border-radius:12px; padding:12px 16px;
+  font-size:12px; color:#6b7a96;
+  font-family:'DM Mono',monospace;
+  margin-bottom:18px; text-align:center;
+  letter-spacing:0.5px;
+}
+
+/* ── HEADER MERGED ── */
+.header-merged {
+  display:flex; align-items:center;
+  justify-content:space-between;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap; gap: 12px;
+}
+.logo-wrap { display:flex; align-items:center; gap:12px; }
+.logo-icon {
+  width:38px; height:38px; border-radius:10px;
+  background:linear-gradient(135deg,#1a2a50,#0d1830);
+  border:1px solid rgba(79,142,255,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; box-shadow:0 0 20px rgba(79,142,255,0.1);
+}
+.logo-text {
+  font-family:'Syne',sans-serif; font-size:15px;
+  font-weight:700; letter-spacing:-0.3px; color:#fff;
+}
+.logo-sub {
+  font-size:9px; color:var(--text3);
+  letter-spacing:1px; text-transform:uppercase;
+  margin-top:1px; font-family:'DM Mono',monospace;
+}
+
+.tf-tabs {
+  display:flex; background:#0d1120;
+  border:1px solid rgba(79, 142, 255, 0.15);
+  border-radius:10px; padding:3px; gap:3px;
+  box-shadow: 0 0 15px rgba(79, 142, 255, 0.05);
+}
+.tf-btn {
+  padding:5px 14px; border-radius:6px; border:none;
+  font-family:'DM Mono',monospace; font-size:11px;
+  font-weight:600; cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color:var(--text2); background:transparent; letter-spacing:0.5px;
+}
+.tf-btn:hover {
+  color:var(--accent);
+  background:rgba(79, 142, 255, 0.05);
+}
+.tf-btn.active {
+  background:linear-gradient(135deg,#4f8eff,#1a3060);
+  color:#fff;
+  border:1px solid rgba(79, 142, 255, 0.4);
+  box-shadow:0 0 12px rgba(79, 142, 255, 0.3);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.header-right {
+  display:flex; align-items:center; gap:12px;
+}
+.live-pill {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(0,229,176,0.08);
+  border:1px solid rgba(0,229,176,0.2);
+  border-radius:20px; padding:4px 10px;
+  font-size:10px; font-weight:600; color:var(--accent2);
+  letter-spacing:0.5px; font-family:'DM Mono',monospace;
+}
+.live-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--accent2); animation:livePulse 2s infinite;
+}
+
+.next-update-pill {
+  font-size: 10px;
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  min-width: 110px;
+  text-align: center;
+}
+.updated-time-text {
+  font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace;
+}
+
+/* REFRESH BUTTON */
+.refresh-btn {
+  background:rgba(0,229,176,0.08);
+  border:1px solid rgba(0,229,176,0.25);
+  color:var(--accent2);
+  padding:4px 12px;
+  border-radius:20px;
+  font-size:10px;
+  font-family:'DM Mono',monospace;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.refresh-btn:hover {
+  background:rgba(0,229,176,0.18);
+  box-shadow:0 0 8px rgba(0,229,176,0.15);
+}
+
+/* ERROR */
+.err-banner{display:none;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:12px 16px;font-size:12px;color:#fca5a5;margin-bottom:16px;font-family:'DM Mono',monospace;}
+
+/* ── STAT CARDS GRID ── */
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:8px; margin-bottom:18px;
+}
+.stat-card {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px;
+  position:relative; overflow:hidden;
+  cursor:default; transition:transform 0.2s, border-color 0.2s;
+  display:flex; align-items:center; justify-content:space-between;
+  height:44px;
+}
+.stat-card:hover { transform:translateY(-1px); border-color:var(--border2); }
+.stat-card-left {
+  display:flex; align-items:center; z-index:1;
+}
+.stat-name {
+  font-family:'Syne',sans-serif; font-size:13px;
+  font-weight:700; letter-spacing:1px;
+}
+.stat-card-right {
+  display:flex; align-items:center; gap:6px;
+  font-family:'DM Mono',monospace; z-index:1;
+}
+.stat-val {
+  font-size:13px; font-weight:600;
+}
+.stat-delta {
+  font-size:9px; font-weight:500;
+}
+.stat-bar {
+  position:absolute; bottom:0; left:0; right:0;
+  height:2px;
+}
+.up   { color:#34d399; }
+.down { color:#f87171; }
+.flat { color:var(--text3); }
+
+/* CHART CARD */
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:20px;}
+.chart-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+.chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);letter-spacing:0.3px;}
+.chart-subtitle{font-size:11px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace;}
+.chart-legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);}
+.leg-box{width:10px;height:10px;border-radius:2px;}
+
+/* AXIS */
+.axis-outer{
+  padding-left:var(--row-left-space);
+  padding-right:var(--row-right-space);
+  margin-bottom:10px;
+}
+.axis-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);padding-bottom:6px;}
+
+/* BAR ROWS */
+.bar-rows{display:flex;flex-direction:column;gap:0;position:relative;}
+.bar-row{
+  display:flex;align-items:center;
+  padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  will-change:transform;
+  transition:background 0.2s;
+}
+.bar-row:last-child{border-bottom:none;}
+.bar-row:hover{background:rgba(255,255,255,0.015);border-radius:6px;}
+
+.row-rank{
+  width:22px;font-size:9px;color:var(--text3);
+  font-family:'DM Mono',monospace;font-weight:600;
+  flex-shrink:0;text-align:center;
+  transition:color 0.4s;
+}
+.row-rank.up{color:var(--pos);}
+.row-rank.down{color:var(--neg);}
+.row-label{width:44px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-align:right;padding-right:12px;flex-shrink:0;}
+.bar-area{flex:1;position:relative;height:34px;display:flex;align-items:center;}
+.bar-track{position:absolute;inset:10px 0;border-radius:2px;background:var(--bg4);}
+.bar-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.1);z-index:2;}
+
+.bar-fill{
+  position:absolute;top:9px;bottom:9px;border-radius:3px;
+  transition:left 0.75s cubic-bezier(0.4,0,0.2,1),
+             width 0.75s cubic-bezier(0.4,0,0.2,1),
+             background 0.4s ease;
+  z-index:3;
+}
+.bar-glow{
+  position:absolute;top:5px;bottom:5px;border-radius:5px;
+  transition:left 0.75s cubic-bezier(0.4,0,0.2,1),
+             width 0.75s cubic-bezier(0.4,0,0.2,1);
+  opacity:0.15;filter:blur(5px);z-index:1;
+}
+.bar-pulse{
+  position:absolute;inset:6px 0;border-radius:4px;
+  opacity:0;z-index:4;pointer-events:none;
+  transition:opacity 0.1s;
+}
+@keyframes pulseFlash{
+  0%  {opacity:0.55;}
+  60% {opacity:0.18;}
+  100%{opacity:0;}
+}
+.bar-row.flash .bar-pulse{animation:pulseFlash 0.65s ease-out forwards;}
+
+.row-score{
+  width:68px;font-family:'DM Mono',monospace;font-size:13px;
+  font-weight:500;padding-left:12px;flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
+.row-score.pos{color:var(--pos);}
+.row-score.neg{color:var(--neg);}
+.row-score.zero{color:var(--text3);}
+
+.row-delta{
+  width:18px;font-size:10px;flex-shrink:0;text-align:center;
+  opacity:0;transition:opacity 0.3s;
+}
+.row-delta.show{opacity:1;}
+.row-delta.up{color:var(--pos);}
+.row-delta.down{color:var(--neg);}
+
+/* Dynamic alignment of Neutral Separator within track zone */
+.half-separator{
+  height:1px;background:var(--border2);
+  margin:14px var(--row-right-space) 14px var(--row-left-space);
+  position:relative;
+}
+.half-separator::after{content:'NEUTRAL ZONE';position:absolute;left:50%;top:-8px;transform:translateX(-50%);font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:1.5px;background:var(--bg2);padding:0 8px;}
+
+/* ── BOTTOM GRID ── */
+.bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+.card {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:16px; padding:20px;
+}
+.card-title {
+  font-family:'Syne',sans-serif; font-size:11px;
+  font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--text3); margin-bottom:16px;
+}
+.sig-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 0; border-bottom:1px solid var(--border); font-size:12px;
+}
+.sig-row:last-child { border-bottom:none; }
+.sig-pair { font-family:'DM Mono',monospace; font-weight:500; font-size:12px; color:var(--text); }
+.sig-diff { font-family:'DM Mono',monospace; font-size:11px; color:var(--text2); min-width:50px; text-align:right; }
+.badge {
+  font-size:10px; font-weight:700; padding:3px 8px;
+  border-radius:5px; letter-spacing:0.8px; font-family:'DM Mono',monospace;
+}
+.b-sbuy  { background:rgba(52,211,153,0.15); color:#34d399; }
+.b-buy   { background:rgba(52,211,153,0.08); color:#6ee7b7; }
+.b-neu   { background:rgba(58,69,88,0.4);    color:#4a5568; }
+.b-sell  { background:rgba(248,113,113,0.08);color:#fca5a5; }
+.b-ssell { background:rgba(248,113,113,0.15);color:#f87171; }
+
+/* ── DISCLAIMER BAR ── */
+.disclaimer-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.disclaimer-icon { font-size: 13px; color: var(--text3); flex-shrink: 0; margin-top: 1px; }
+.disclaimer-text { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; line-height: 1.6; margin: 0; }
+.disclaimer-text strong { color: var(--text2); font-weight: 600; }
+
+/* STATUS BAR */
+.status-bar{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;flex-wrap:wrap;gap:8px;}
+.status-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent2);margin-right:6px;vertical-align:middle;animation:livePulse 2s infinite;}
+
+/* RESPONSIVE */
+@media(max-width:1150px){
+  .stats-grid{grid-template-columns:repeat(4,1fr); gap:6px;}
+}
+@media(max-width:768px){
+  :root {
+    --row-left-space: 70px;   
+    --row-right-space: 74px;  
+  }
+  .sessions-bar{flex-wrap:wrap;}
+  .session-item{min-width:calc(50% - 1px);}
+  .row-label{width:36px;font-size:11px;}
+  .row-score{width:56px;font-size:12px;}
+  .bottom-grid{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:repeat(4,1fr);}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .session-item{min-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="load-ring"></div>
+  <div class="load-text">Connecting to live data...</div>
+  <div class="load-sub" id="loadSub">Initializing forex pipeline</div>
+</div>
+
+<div class="page">
+
+  <!-- SESSIONS -->
+  <div class="sessions-bar">
+    <div class="session-item" id="sess-sydney" style="--session-color:var(--sydney)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">Sydney</div>
+        <div class="session-status closed" id="badge-sydney"><div class="session-dot"></div><span id="stat-sydney">CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-sydney">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-sydney">AEDT · UTC+11</div>
+          <div class="session-hours" id="hours-sydney">22:00 – 07:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-progress-wrap"><div class="session-progress-bar" id="prog-sydney" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-tokyo" style="--session-color:var(--tokyo)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">Tokyo</div>
+        <div class="session-status closed" id="badge-tokyo"><div class="session-dot"></div><span id="stat-tokyo">CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-tokyo">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-tokyo">JST · UTC+9</div>
+          <div class="session-hours" id="hours-tokyo">00:00 – 09:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-progress-wrap"><div class="session-progress-bar" id="prog-tokyo" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-london" style="--session-color:var(--london)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">London</div>
+        <div class="session-status closed" id="badge-london"><div class="session-dot"></div><span id="stat-london">CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-london">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-london">BST/GMT · UTC+0/+1</div>
+          <div class="session-hours" id="hours-london">08:00 – 17:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-progress-wrap"><div class="session-progress-bar" id="prog-london" style="width:0%"></div></div>
+    </div>
+    <div class="session-item" id="sess-newyork" style="--session-color:var(--newyork)">
+      <div class="session-glow"></div>
+      <div class="session-top">
+        <div class="session-city">New York</div>
+        <div class="session-status closed" id="badge-newyork"><div class="session-dot"></div><span id="stat-newyork">CLOSED</span></div>
+      </div>
+      <div class="session-middle">
+        <div class="session-time" id="time-newyork">--:--:--</div>
+        <div class="session-info-right">
+          <div class="session-tz" id="tz-newyork">EDT/EST · UTC-4/-5</div>
+          <div class="session-hours" id="hours-newyork">13:00 – 22:00 UTC</div>
+        </div>
+      </div>
+      <div class="session-progress-wrap"><div class="session-progress-bar" id="prog-newyork" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- WEEKEND BANNER -->
+  <div class="weekend-banner" id="weekendBanner">
+    🔒 Forex market is closed for the weekend. Trading resumes Sunday 22:00 UTC.
+  </div>
+
+  <!-- HEADER MERGED -->
+  <div class="header-merged">
+    <div class="logo-wrap">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-text">Currency Strength Bars</div>
+        <div class="logo-sub">RSI Momentum · 28 Pairs · Live</div>
+      </div>
+    </div>
+
+    <div class="tf-tabs">
+      <button class="tf-btn" data-tf="M5">M5</button>
+      <button class="tf-btn" data-tf="M15">M15</button>
+      <button class="tf-btn" data-tf="M30">M30</button>
+      <button class="tf-btn active" data-tf="H1">H1</button>
+      <button class="tf-btn" data-tf="H4">H4</button>
+      <button class="tf-btn" data-tf="D1">D1</button>
+    </div>
+
+    <div class="header-right">
+      <button id="refreshDataBtn" class="refresh-btn">⟳ Refresh</button>
+      <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+      <div class="next-update-pill" id="nextUpdate">Connecting...</div>
+      <div class="updated-time-text">Updated: <span id="lastUpdated">--</span></div>
+    </div>
+  </div>
+
+  <div class="err-banner" id="errBanner"></div>
+
+  <!-- STAT CARDS GRID -->
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <!-- BAR CHART -->
+  <div class="chart-card">
+    <div class="chart-card-top">
+      <div>
+        <div class="chart-title">Currency Strength Ranking — <span id="tfLabel">H1</span></div>
+        <div class="chart-subtitle">Score range −100 to +100 · RSI(14) slope-weighted · Auto-refresh 30s</div>
+      </div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-box" style="background:#22c37a"></div>Bullish momentum</div>
+        <div class="leg-item"><div class="leg-box" style="background:#e84c7d"></div>Bearish momentum</div>
+      </div>
+    </div>
+    <div class="axis-outer">
+      <div class="axis-labels">
+        <span>−100</span><span>−75</span><span>−50</span><span>−25</span>
+        <span>0</span>
+        <span>+25</span><span>+50</span><span>+75</span><span>+100</span>
+      </div>
+    </div>
+    <div class="bar-rows" id="barRows"></div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="bottom-grid">
+    <div class="card">
+      <div class="card-title">Strength Rankings</div>
+      <div class="bar-rows" id="rankList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Live Trade Signals</div>
+      <div id="sigList"></div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER BAR -->
+  <div class="disclaimer-bar">
+    <span class="disclaimer-icon">⚠</span>
+    <p class="disclaimer-text">
+      <strong>Disclaimer:</strong> This tool displays currency strength based on RSI momentum analysis across 28 pairs and is intended <strong>for informational and educational purposes only.</strong>
+      It does <strong>not</strong> constitute financial advice, investment recommendations, or trading signals.
+      Currency strength is just one of many factors in trading decisions — always conduct your own analysis and consult a qualified financial advisor before entering any trade.
+      <strong>Trading forex involves significant risk of loss.</strong>
+    </p>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div><span class="status-dot"></span>Source: MT4 VPS → forex_data.json · 28 pairs · 6 timeframes</div>
+    <div id="sourceInfo">Active source: —</div>
+    <div>RSI(14) · Slope weighted · Score ×100 · Auto-refresh 30s</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════
+const DATA_URL   = 'https://forextoolkits.com/forex-api/forex_data.json';
+const REFRESH_MS = 30000;
+const RSI_PERIOD = 14;
+
+const CURRENCIES = ['AUD','GBP','EUR','NZD','JPY','CHF','CAD','USD'];
+const COLORS = {
+  AUD:'#f5a623',GBP:'#4a9eff',EUR:'#a78bfa',
+  NZD:'#34d399',JPY:'#f87171',CHF:'#22d3ee',
+  CAD:'#f472b6',USD:'#e2e8f0'
+};
+const PAIR_MAP = [
+  ['EURUSD','EUR','USD'],['GBPUSD','GBP','USD'],['USDJPY','USD','JPY'],
+  ['USDCHF','USD','CHF'],['AUDUSD','AUD','USD'],['USDCAD','USD','CAD'],
+  ['NZDUSD','NZD','USD'],['EURGBP','EUR','GBP'],['EURJPY','EUR','JPY'],
+  ['EURCHF','EUR','CHF'],['EURAUD','EUR','AUD'],['EURCAD','EUR','CAD'],
+  ['EURNZD','EUR','NZD'],['GBPJPY','GBP','JPY'],['GBPCHF','GBP','CHF'],
+  ['GBPAUD','GBP','AUD'],['GBPCAD','GBP','CAD'],['GBPNZD','GBP','NZD'],
+  ['CHFJPY','CHF','JPY'],['AUDJPY','AUD','JPY'],['CADJPY','CAD','JPY'],
+  ['NZDJPY','NZD','JPY'],['AUDCHF','AUD','CHF'],['CADCHF','CAD','CHF'],
+  ['NZDCHF','NZD','CHF'],['AUDCAD','AUD','CAD'],['AUDNZD','AUD','NZD'],
+  ['NZDCAD','NZD','CAD']
+];
+const TF_LABELS = {M5:'5 Min',M15:'15 Min',M30:'30 Min',H1:'1 Hour',H4:'4 Hour',D1:'Daily'};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let currentTF  = 'H1';
+let liveData   = null;
+let prevScores = {};         // previous scores for delta/tween
+let prevRanks  = {};         // previous rank per currency
+let countdown  = 30;
+let cdTimer    = null;
+let rowsBuilt  = false;
+let tweenTimers = {};         // active tween rAF handles per currency
+
+// ═══════════════════════════════════════════════════
+//  DST HELPERS
+// ═══════════════════════════════════════════════════
+function lastSunday(year, month) {
+  const d = new Date(Date.UTC(year, month + 1, 0));
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  return d;
+}
+
+function nthSunday(year, month, n) {
+  const d = new Date(Date.UTC(year, month, 1));
+  const dayOfWeek = d.getUTCDay();
+  const daysUntilSun = (7 - dayOfWeek) % 7;
+  d.setUTCDate(1 + daysUntilSun + (n - 1) * 7);
+  return d;
+}
+
+function isUKSummerTime(date) {
+  const y     = date.getUTCFullYear();
+  const start = lastSunday(y, 2);
+  const end   = lastSunday(y, 9);
+  return date >= start && date < end;
+}
+
+function isUSSummerTime(date) {
+  const y     = date.getUTCFullYear();
+  const start = nthSunday(y, 2, 2);
+  const end   = nthSunday(y, 10, 1);
+  return date >= start && date < end;
+}
+
+function isAustraliaSummerTime(date) {
+  const y     = date.getUTCFullYear();
+  const start = nthSunday(y, 9, 1);
+  const endY  = nthSunday(y, 3, 1);
+  return (date >= start) || (date < endY);
+}
+
+// ═══════════════════════════════════════════════════
+//  SESSION CLOCKS & WEEKEND ENGINE
+// ═══════════════════════════════════════════════════
+function getSessionConfig(now) {
+  const ukDST  = isUKSummerTime(now);
+  const usDST  = isUSSummerTime(now);
+  const auDST  = isAustraliaSummerTime(now);
+
+  return {
+    sydney: {
+      open:  auDST ? 21 : 22,
+      close: auDST ? 6  : 7,
+      tzLabel: auDST ? 'AEDT · UTC+11' : 'AEST · UTC+10',
+      hoursLabel: auDST ? '21:00 – 06:00 UTC' : '22:00 – 07:00 UTC',
+      offset: auDST ? 11 : 10,
+    },
+    tokyo: {
+      open:  0,
+      close: 9,
+      tzLabel: 'JST · UTC+9',
+      hoursLabel: '00:00 – 09:00 UTC',
+      offset: 9,
+    },
+    london: {
+      open:  ukDST ? 7 : 8,
+      close: ukDST ? 16 : 17,
+      tzLabel: ukDST ? 'BST · UTC+1' : 'GMT · UTC+0',
+      hoursLabel: ukDST ? '07:00 – 16:00 UTC' : '08:00 – 17:00 UTC',
+      offset: ukDST ? 1 : 0,
+    },
+    newyork: {
+      open:  usDST ? 12 : 13,
+      close: usDST ? 21 : 22,
+      tzLabel: usDST ? 'EDT · UTC−4' : 'EST · UTC−5',
+      hoursLabel: usDST ? '12:00 – 21:00 UTC' : '13:00 – 22:00 UTC',
+      offset: usDST ? -4 : -5,
+    },
+  };
+}
+
+function isWeekend(utcNow) {
+  const day     = utcNow.getUTCDay();
+  const hour    = utcNow.getUTCHours();
+  const minutes = utcNow.getUTCMinutes();
+  const utcDec  = hour + minutes / 60;
+
+  if (day === 6) return true;
+  if (day === 5 && utcDec >= 22) return true;
+  if (day === 0 && utcDec < 22) return true;
+
+  return false;
+}
+
+function isSessionOpen(utcHour, utcMin, openH, closeH) {
+  const t = utcHour + utcMin / 60;
+  if (openH < closeH) {
+    return t >= openH && t < closeH;
+  } else {
+    return t >= openH || t < closeH;
+  }
+}
+
+function sessionProgress(utcHour, utcMin, openH, closeH) {
+  const t = utcHour + utcMin / 60;
+  let elapsed, total;
+  if (openH < closeH) {
+    total   = closeH - openH;
+    elapsed = t - openH;
+  } else {
+    total   = (24 - openH) + closeH;
+    elapsed = t >= openH ? t - openH : (24 - openH) + t;
+  }
+  return Math.min(100, Math.max(0, (elapsed / total) * 100));
+}
+
+function updateClocks() {
+  const now    = new Date();
+  const utcNow = new Date(now.getTime());
+  const cfg    = getSessionConfig(utcNow);
+  const utcH   = utcNow.getUTCHours();
+  const utcM   = utcNow.getUTCMinutes();
+  const weekend = isWeekend(utcNow);
+
+  let mt4Status = null;
+  if (liveData?.market_status) {
+    mt4Status = liveData.market_status;
+  }
+
+  const banner = document.getElementById('weekendBanner');
+  if (banner) banner.style.display = weekend ? 'block' : 'none';
+
+  ['sydney','tokyo','london','newyork'].forEach(key => {
+    const scfg    = cfg[key];
+    const el      = document.getElementById('sess-' + key);
+    if (!el) return;
+    const timeEl  = document.getElementById('time-' + key);
+    const badgeEl = document.getElementById('badge-' + key);
+    const progEl  = document.getElementById('prog-' + key);
+    const tzEl    = document.getElementById('tz-' + key);
+    const hoursEl = document.getElementById('hours-' + key);
+
+    if (tzEl)    tzEl.textContent    = scfg.tzLabel;
+    if (hoursEl) hoursEl.textContent = scfg.hoursLabel;
+
+    const localMs   = utcNow.getTime() + scfg.offset * 3600000;
+    const localDate = new Date(localMs);
+    const hh = String(localDate.getUTCHours()).padStart(2,'0');
+    const mm = String(localDate.getUTCMinutes()).padStart(2,'0');
+    const ss = String(localDate.getUTCSeconds()).padStart(2,'0');
+    timeEl.textContent = `${hh}:${mm}:${ss}`;
+
+    let isOpen = false;
+
+    if (weekend) {
+      isOpen = false;
+    } else if (mt4Status && !mt4Status.is_open) {
+      isOpen = false;
+    } else if (mt4Status && mt4Status.sessions) {
+      const mt4Key = key === 'newyork' ? 'new_york' : key;
+      isOpen = mt4Status.sessions[mt4Key] === true;
+    } else {
+      isOpen = isSessionOpen(utcH, utcM, scfg.open, scfg.close);
+    }
+
+    el.classList.remove('active','weekend');
+    badgeEl.className = 'session-status';
+
+    if (weekend) {
+      el.classList.add('weekend');
+      badgeEl.classList.add('weekend-badge');
+      badgeEl.innerHTML = '<div class="session-dot"></div><span>WEEKEND</span>';
+      progEl.style.width = '0%';
+    } else if (isOpen) {
+      el.classList.add('active');
+      badgeEl.classList.add('open');
+      badgeEl.innerHTML = '<div class="session-dot"></div><span>OPEN</span>';
+      const pct = sessionProgress(utcH, utcM, scfg.open, scfg.close);
+      progEl.style.width = pct + '%';
+    } else {
+      badgeEl.classList.add('closed');
+      badgeEl.innerHTML = '<div class="session-dot"></div><span>CLOSED</span>';
+      progEl.style.width = '0%';
+    }
+  });
+}
+setInterval(updateClocks, 1000);
+updateClocks();
+
+// ═══════════════════════════════════════════════════
+//  RSI + SLOPE FORMULAS
+// ═══════════════════════════════════════════════════
+function calcRSI(closes, period = RSI_PERIOD) {
+  if (closes.length < period + 1) return [];
+  const rsis = [];
+  let avgG = 0, avgL = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i-1];
+    if (d > 0) avgG += d; else avgL -= d;
+  }
+  avgG /= period; avgL /= period;
+  rsis.push(avgL === 0 ? 100 : 100 - 100/(1 + avgG/avgL));
+  for (let i = period+1; i < closes.length; i++) {
+    const d = closes[i] - closes[i-1];
+    const g = d > 0 ? d : 0;
+    const l = d < 0 ? -d : 0;
+    avgG = (avgG*(period-1) + g)/period;
+    avgL = (avgL*(period-1) + l)/period;
+    rsis.push(avgL === 0 ? 100 : 100 - 100/(1 + avgG/avgL));
+  }
+  return rsis;
+}
+
+function rsiNorm(rsi)  { return (rsi - 50) / 50; }
+
+function calcSlope(arr, n=6) {
+  if (arr.length < 2) return 0;
+  const s = arr.slice(-Math.min(n, arr.length));
+  const N = s.length;
+  let sx=0,sy=0,sxy=0,sx2=0;
+  s.forEach((y,x)=>{ sx+=x; sy+=y; sxy+=x*y; sx2+=x*x; });
+  const slope = (N*sxy - sx*sy)/(N*sx2 - sx*sx);
+  return isNaN(slope) ? 0 : Math.max(-1, Math.min(1, slope*8));
+}
+
+// ═══════════════════════════════════════════════════
+//  STANDARD HISTORICAL EMA-SMOOTHING METHOD
+// ═══════════════════════════════════════════════════
+function computeHistoricalStrengths(tf) {
+  if (!liveData?.pairs) return {};
+
+  let minAvail = 999;
+  PAIR_MAP.forEach(([sym]) => {
+    const d = liveData.pairs[sym];
+    if (d?.tf?.[tf]?.c) {
+      const rsiLen = d.tf[tf].c.length - RSI_PERIOD;
+      if (rsiLen > 0 && rsiLen < minAvail) minAvail = rsiLen;
+    }
+  });
+  const HIST = Math.min(40, minAvail);
+  if (HIST <= 0 || HIST === 999) return {};
+
+  const hS={}, hC={};
+  CURRENCIES.forEach(c => {
+    hS[c] = new Array(HIST).fill(0);
+    hC[c] = new Array(HIST).fill(0);
+  });
+  PAIR_MAP.forEach(([sym,base,quote]) => {
+    const d = liveData.pairs[sym];
+    if (!d?.tf?.[tf]?.c || d.tf[tf].c.length < RSI_PERIOD+5) return;
+    const rsiArr = calcRSI(d.tf[tf].c, RSI_PERIOD);
+    for (let i=0; i<HIST; i++) {
+      const rIdx = rsiArr.length - HIST + i;
+      if (rIdx < 0) continue;
+      const sl  = rsiArr.slice(Math.max(0,rIdx-5), rIdx+1);
+      const str = rsiNorm(rsiArr[rIdx])*0.6 + calcSlope(sl,sl.length)*0.4;
+      hS[base][i]  += str; hC[base][i]++;
+      hS[quote][i] -= str; hC[quote][i]++;
+    }
+  });
+
+  const TF_ALPHA = {M5:0.4, M15:0.35, M30:0.3, H1:0.25, H4:0.2, D1:0.15};
+  const alpha = TF_ALPHA[tf] ?? 0.25;
+  const smoothed = {};
+  CURRENCIES.forEach(c => {
+    const raw = hS[c].map((s,i) => hC[c][i]>0 ? s/hC[c][i] : 0);
+    const ema = [];
+    raw.forEach((v,i) => {
+      ema.push(i===0 ? v : alpha*v + (1-alpha)*ema[i-1]);
+    });
+    smoothed[c] = ema;
+  });
+
+  let globalMax = 0;
+  CURRENCIES.forEach(c => {
+    smoothed[c].forEach(v => { if (Math.abs(v) > globalMax) globalMax = Math.abs(v); });
+  });
+
+  const TF_FLOOR = {M5:0.05, M15:0.06, M30:0.07, H1:0.08, H4:0.10, D1:0.12};
+  const floor = TF_FLOOR[tf] ?? 0.08;
+  const effectiveMax = Math.max(globalMax, floor);
+
+  const TARGET = 90;
+  const result = {};
+  CURRENCIES.forEach(c => {
+    result[c] = smoothed[c].map(v => Math.round((v / effectiveMax) * TARGET));
+  });
+  return result;
+}
+
+// ═══════════════════════════════════════════════════
+//  FILL GEOMETRY
+// ═══════════════════════════════════════════════════
+function calcFill(v) {
+  const pct=Math.abs(v);
+  const fillW=(pct/100)*50;
+  const fillLeft=v>=0?50:50-fillW;
+  const fillColor=v>=0?'#22c37a':'#e84c7d';
+  return {fillLeft,fillW,fillColor};
+}
+
+// ═══════════════════════════════════════════════════
+//  SCORE COUNTER TWEEN
+// ═══════════════════════════════════════════════════
+function tweenScore(cur, oldVal, newVal) {
+  if (tweenTimers[cur]) cancelAnimationFrame(tweenTimers[cur]);
+  const scoreEl = document.getElementById('score-'+cur);
+  if (!scoreEl) return;
+  const duration = 520;
+  const start = performance.now();
+  const diff = newVal - oldVal;
+  function step(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed/duration, 1);
+    const eased = 1 - Math.pow(1-t, 3);
+    const current = Math.round(oldVal + diff*eased);
+    const sign = current >= 0 ? '+' : '';
+    scoreEl.textContent = sign + current;
+    const cls = current > 5 ? 'pos' : current < -5 ? 'neg' : 'zero';
+    scoreEl.className = 'row-score '+cls;
+    if (t < 1) tweenTimers[cur] = requestAnimationFrame(step);
+    else delete tweenTimers[cur];
+  }
+  tweenTimers[cur] = requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER STATS GRID
+// ═══════════════════════════════════════════════════
+function renderStats(scores) {
+  const sorted = [...CURRENCIES].sort((a,b)=>scores[b]-scores[a]);
+  document.getElementById('statsGrid').innerHTML = sorted.map((c) => {
+    const v = scores[c];
+    const prev = prevScores[c] ?? v;
+    const delta = v - prev;
+    const sign = v >= 0 ? '+' : '';
+    const dSign = delta >= 0 ? '+' : '';
+    const dsClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+    
+    return `
+      <div class="stat-card">
+        <div class="stat-card-left">
+          <span class="stat-name" style="color:${COLORS[c]}">${c}</span>
+        </div>
+        <div class="stat-card-right">
+          <span class="stat-val" style="color:${COLORS[c]}">${sign}${v}</span>
+          <span class="stat-delta ${dsClass}">${dSign}${delta}</span>
+        </div>
+        <div class="stat-bar" style="background:${COLORS[c]}"></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER SIGNALS & DYNAMIC THRESHOLDS
+// ═══════════════════════════════════════════════════
+function renderSignals(scores) {
+  const TF_THRESH = {
+    M5:  { buy: 32, strong: 72 },
+    M15: { buy: 27, strong: 64 },
+    M30: { buy: 23, strong: 59 },
+    H1:  { buy: 20, strong: 55 },
+    H4:  { buy: 15, transition: 42 },
+    D1:  { buy: 10, strong: 30 },
+  };
+  const th = TF_THRESH[currentTF] || TF_THRESH['H1'];
+  const sigs = [];
+
+  PAIR_MAP.forEach(([sym, base, quote]) => {
+    const baseScore  = scores[base] ?? 0;
+    const quoteScore = scores[quote] ?? 0;
+    const diff       = baseScore - quoteScore;
+    const absDiff    = Math.abs(diff);
+
+    let cls, label;
+
+    if (diff >= 0) {
+      if      (diff > th.strong)   { cls = 'b-sbuy';  label = 'STRONG BUY';  }
+      else if (diff > th.buy)      { cls = 'b-buy';   label = 'BUY';         }
+      else if (diff > th.buy * 0.5){ cls = 'b-neu';   label = 'NEUTRAL';     }
+      else                         { cls = 'b-neu';   label = 'NEUTRAL';     }
+    } else {
+      if      (absDiff > th.strong) { cls = 'b-ssell'; label = 'STRONG SELL'; }
+      else if (absDiff > th.buy)    { cls = 'b-sell';  label = 'SELL';        }
+      else if (absDiff > th.buy * 0.5){ cls = 'b-neu';  label = 'NEUTRAL';     }
+      else                          { cls = 'b-neu';  label = 'NEUTRAL';     }
+    }
+
+    if (absDiff > th.buy * 0.5) {
+      sigs.push({ 
+        pair: `${base}/${quote}`, 
+        diff: diff, 
+        absDiff: absDiff, 
+        cls: cls, 
+        label: label 
+      });
+    }
+  });
+
+  sigs.sort((a, b) => b.absDiff - a.absDiff);
+  const top = sigs.slice(0, 8);
+
+  document.getElementById('sigList').innerHTML = top.map(s => `
+    <div class="sig-row">
+      <div class="sig-pair">${s.pair}</div>
+      <span class="badge ${s.cls}">${s.label}</span>
+      <div class="sig-diff">${s.diff >= 0 ? '+' : ''}${s.diff}</div>
+    </div>`).join('');
+}
+
+function renderRanking(scores) {
+  const sorted = [...CURRENCIES].sort((a,b)=>scores[b]-scores[a]);
+  const maxAbs = Math.max(...Object.values(scores).map(Math.abs), 1);
+  document.getElementById('rankList').innerHTML = sorted.map((c,i)=>{
+    const v=scores[c], pct=Math.abs(v)/maxAbs*100;
+    const cls=v>10?'pos':v<-10?'neg':'zero';
+    return `<div class="rank-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div class="rank-cc" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:${COLORS[c]};width:44px;">${c}</div>
+      <div class="rank-track" style="flex:1;height:4px;background:var(--bg4);border-radius:2px;margin:0 12px;overflow:hidden;">
+        <div class="rank-fill" style="width:${pct}%;height:100%;background:${COLORS[c]};border-radius:2px;"></div>
+      </div>
+      <div class="row-score ${cls}" style="font-family:'DM Mono',monospace;font-size:12px;width:40px;text-align:right;">${v>=0?'+':''}${v}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  FLIP ANIMATION WITH DYNAMIC NEUTRAL SEPARATOR
+// ═══════════════════════════════════════════════════
+function flipReorder(container, sorted, scores) {
+  const rows = {};
+  CURRENCIES.forEach(cur => {
+    const el = document.getElementById('brow-'+cur);
+    if (el) rows[cur] = {el, before: el.getBoundingClientRect().top};
+  });
+
+  // Reorder DOM and place neutral separator dynamically
+  const sep = container.querySelector('.half-separator') || document.createElement('div');
+  if (!sep.className) sep.className = 'half-separator';
+
+  // Find transition index where scores transition from positive (>=0) to negative (<0)
+  let transitionIdx = sorted.findIndex(cur => scores[cur] < 0);
+  if (transitionIdx === -1) transitionIdx = sorted.length;
+
+  sorted.forEach((cur, idx) => {
+    const el = rows[cur]?.el;
+    if (!el) return;
+    if (idx === transitionIdx) {
+      container.appendChild(sep);
+    }
+    container.appendChild(el);
+  });
+
+  // FLIP: measure new positions, apply inverse, animate to 0
+  CURRENCIES.forEach(cur => {
+    const r = rows[cur];
+    if (!r) return;
+    const after = r.el.getBoundingClientRect().top;
+    const delta = r.before - after;
+    if (Math.abs(delta) < 1) return;
+
+    r.el.style.transition = 'none';
+    r.el.style.transform  = `translateY(${delta}px)`;
+    r.el.getBoundingClientRect();
+    r.el.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1)';
+    r.el.style.transform  = 'translateY(0)';
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER BARS (MAIN RANKING)
+// ═══════════════════════════════════════════════════
+function renderBars(scores) {
+  if (!scores) return;
+  const sorted = [...CURRENCIES].sort((a,b) => scores[b] - scores[a]);
+  const container = document.getElementById('barRows');
+
+  const newRanks = {};
+  sorted.forEach((cur,i) => { newRanks[cur] = i+1; });
+
+  // Find transition index for first load
+  let transitionIdx = sorted.findIndex(cur => scores[cur] < 0);
+  if (transitionIdx === -1) transitionIdx = sorted.length;
+
+  if (!rowsBuilt) {
+    container.innerHTML = '';
+    sorted.forEach((cur, idx) => {
+      if (idx === transitionIdx) {
+        const s = document.createElement('div');
+        s.className = 'half-separator';
+        container.appendChild(s);
+      }
+      container.appendChild(makeRow(cur, idx, scores[cur]));
+    });
+    rowsBuilt = true;
+
+  } else {
+    CURRENCIES.forEach(cur => {
+      const {fillLeft,fillW,fillColor} = calcFill(scores[cur]);
+      const fill = document.getElementById('fill-'+cur);
+      const glow = document.getElementById('glow-'+cur);
+      if (fill){ fill.style.left=fillLeft+'%'; fill.style.width=fillW+'%'; fill.style.background=fillColor; }
+      if (glow){ glow.style.left=fillLeft+'%'; glow.style.width=fillW+'%'; glow.style.background=fillColor; }
+    });
+
+    CURRENCIES.forEach(cur => {
+      const oldVal = prevScores[cur] ?? scores[cur];
+      tweenScore(cur, oldVal, scores[cur]);
+    });
+
+    CURRENCIES.forEach(cur => {
+      const delta = document.getElementById('delta-'+cur);
+      const rankEl = document.getElementById('rank-'+cur);
+      const diff = (prevScores[cur] ?? scores[cur]) - scores[cur];
+      const rankDiff = (prevRanks[cur] ?? newRanks[cur]) - newRanks[cur];
+
+      if (delta) {
+        if (Math.abs(diff) >= 2) {
+          delta.textContent = diff > 0 ? '▲' : '▼';
+          delta.className   = 'row-delta show ' + (diff > 0 ? 'up':'down');
+          setTimeout(() => { delta.className='row-delta'; }, 3500);
+        }
+      }
+      if (rankEl) {
+        rankEl.textContent = newRanks[cur];
+        if (rankDiff > 0) {
+          rankEl.className='row-rank up';
+          setTimeout(()=>{ rankEl.className='row-rank'; },1500);
+        } else if (rankDiff < 0) {
+          rankEl.className='row-rank down';
+          setTimeout(()=>{ rankEl.className='row-rank'; },1500);
+        }
+      }
+    });
+
+    CURRENCIES.forEach(cur => {
+      const row = document.getElementById('brow-'+cur);
+      if (!row) return;
+      const diff = Math.abs((prevScores[cur]??scores[cur]) - scores[cur]);
+      if (diff >= 3) {
+        const pulse = document.getElementById('pulse-'+cur);
+        if (pulse) pulse.style.background = scores[cur]>=0 ? '#22c37a':'#e84c7d';
+        row.classList.remove('flash');
+        void row.offsetWidth;
+        row.classList.add('flash');
+        setTimeout(()=>row.classList.remove('flash'), 700);
+      }
+    });
+
+    // Reorder with dynamic transition placement
+    flipReorder(container, sorted, scores);
+  }
+
+  // Update stats cards
+  renderStats(scores);
+
+  prevScores = {...scores};
+  prevRanks  = {...newRanks};
+}
+
+function makeRow(cur, idx, v) {
+  const row = document.createElement('div');
+  row.className = 'bar-row';
+  row.id = 'brow-'+cur;
+  const {fillLeft,fillW,fillColor} = calcFill(v);
+  const scoreClass = v > 5 ? 'pos' : v < -5 ? 'neg' : 'zero';
+  const sign = v >= 0 ? '+' : '';
+  row.innerHTML = `
+    <div class="row-rank" id="rank-${cur}">${idx+1}</div>
+    <div class="row-label" style="color:${COLORS[cur]}">${cur}</div>
+    <div class="bar-area">
+      <div class="bar-track"></div>
+      <div class="bar-zero"></div>
+      <div class="bar-glow" id="glow-${cur}"
+           style="left:${fillLeft}%;width:${fillW}%;background:${fillColor}"></div>
+      <div class="bar-fill" id="fill-${cur}"
+           style="left:${fillLeft}%;width:${fillW}%;background:${fillColor}"></div>
+      <div class="bar-pulse" id="pulse-${cur}"></div>
+    </div>
+    <div class="row-score ${scoreClass}" id="score-${cur}">${sign}${v}</div>
+    <div class="row-delta" id="delta-${cur}"></div>
+  `;
+  return row;
+}
+
+// ═══════════════════════════════════════════════════
+//  FETCH (Simple GET with Dynamic Caching Protection)
+// ═══════════════════════════════════════════════════
+async function fetchData() {
+  try {
+    document.getElementById('loadSub').textContent = 'Fetching forex_data.json...';
+    // Simple fetch without custom preflight-trigger headers
+    const res = await fetch(DATA_URL + '?_=' + Date.now()); 
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    liveData = await res.json();
+    
+    // Completely Year-Free, Ever-Green Alerting Logic
+    // Eliminates all PC Clock Drift false-alarms by removing blocking age restrictions!
+    hideErr(); 
+    
+    document.getElementById('sourceInfo').textContent = 'Active source: '+(liveData.active_source||'—');
+    return true;
+  } catch(e) {
+    console.error(e);
+    // User-Friendly error shown only on actual physical connection failures (down vps, dead router)
+    if (document.visibilityState === 'visible') {
+      showErr('⚠️ Unable to connect to forex server. Reconnecting in 30s...');
+    }
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  REFRESH CYCLE & SAFETY LOADING HANDLER
+// ═══════════════════════════════════════════════════
+async function refresh() {
+  try {
+    const ok = await fetchData();
+    if (!ok) {
+      // Loop survives network glitches!
+      startCountdown(); 
+      return;
+    }
+    
+    // Use the standard EMA-Smoothed Method
+    const histData = computeHistoricalStrengths(currentTF);
+    if (!histData || !Object.keys(histData).length) {
+      showErr('⚠️ Calculations pending. Retrying in a moment.');
+      startCountdown();
+      return;
+    }
+    
+    // Extract the latest scores from the EMA array
+    const scores = {};
+    CURRENCIES.forEach(c => {
+      const arr = histData[c];
+      scores[c] = arr ? arr[arr.length - 1] : 0;
+    });
+
+    renderBars(scores);
+    renderRanking(scores);
+    renderSignals(scores);
+    updateClocks();
+    
+    const now = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    document.getElementById('lastUpdated').textContent = now;
+    
+    // SAFE DOM CHECK
+    const tfInfo = document.getElementById('tfInfo');
+    if (tfInfo) {
+      tfInfo.innerHTML = `Showing ${currentTF} · RSI(14) · 28 pairs · Updated <span id="lastUpdated">${now}</span>`;
+    }
+    
+    hideLoading();
+    startCountdown();
+  } catch (error) {
+    console.error(error);
+    if (document.visibilityState === 'visible') {
+      showErr('⚠️ An unexpected error occurred: ' + error.message);
+    }
+    startCountdown(); // Anti-freeze safety
+  }
+}
+
+function hideLoading() {
+  const ld = document.getElementById('loading');
+  if (ld) {
+    ld.style.opacity = '0';
+    setTimeout(() => { ld.style.display = 'none'; }, 600);
+  }
+}
+
+function startCountdown() {
+  clearInterval(cdTimer);
+  countdown = Math.floor(REFRESH_MS/1000);
+  cdTimer = setInterval(()=>{
+    countdown--;
+    document.getElementById('nextUpdate').textContent = `Next update ${countdown}s`;
+    if (countdown<=0){
+      clearInterval(cdTimer);
+      document.getElementById('nextUpdate').textContent='Updating...';
+      refresh();
+    }
+  },1000);
+}
+
+function showErr(msg){
+  const el=document.getElementById('errBanner');
+  if (el) {
+    el.style.display='block';
+    el.innerHTML=msg;
+  }
+  hideLoading();
+}
+function hideErr(){
+  const el=document.getElementById('errBanner');
+  if (el) el.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════════════════
+document.getElementById('refreshDataBtn').addEventListener('click', () => {
+  const btn = document.getElementById('refreshDataBtn');
+  btn.textContent = '⟳ Loading...';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  clearInterval(cdTimer);
+  refresh().finally(() => {
+    btn.textContent = '⟳ Refresh';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+});
+
+document.querySelectorAll('.tf-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTF=btn.dataset.tf;
+    document.getElementById('tfLabel').textContent=TF_LABELS[currentTF];
+    prevScores={}; prevRanks={}; rowsBuilt=false;
+    document.getElementById('barRows').innerHTML='';
+    clearInterval(cdTimer);
+    if(liveData){
+      const hist = computeHistoricalStrengths(currentTF);
+      const scores = {};
+      if (hist && Object.keys(hist).length) {
+        CURRENCIES.forEach(c => {
+          const arr = hist[c];
+          scores[c] = arr ? arr[arr.length - 1] : 0;
+        });
+        renderBars(scores);
+        renderRanking(scores);
+        renderSignals(scores);
+      }
+      startCountdown();
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════
+//  TAB VISIBILITY CHANGE HANDLER (Page Visibility API)
+// ═══════════════════════════════════════════════════
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Immediate silent wake & fetch on restoring window
+    clearInterval(cdTimer);
+    refresh();
+  } else {
+    // Silence background activities to prevent throttling-induced false alarms
+    clearInterval(cdTimer);
+  }
+});
+
+refresh();
+
+// ═══════════════════════════════════════════════════
+//  AUTO-RESIZE IFRAME HANDLER (Parent Height Transmitter)
+// ═══════════════════════════════════════════════════
+function reportHeight() {
+  const container = document.querySelector('.page');
+  if (!container) return;
+  const height = container.scrollHeight;
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'csm-height', height: height + 35 }, '*');
+  }
+}
+
+if (typeof ResizeObserver !== 'undefined') {
+  const container = document.querySelector('.page');
+  if (container) {
+    const ro = new ResizeObserver(() => {
+      reportHeight();
+    });
+    ro.observe(container);
+  }
+} else {
+  window.addEventListener('load', reportHeight);
+  let _resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(reportHeight, 150);
+  });
+}
+document.addEventListener('click', () => {
+  setTimeout(reportHeight, 100);
+  setTimeout(reportHeight, 300);
+});
+</script>
+</body>
+</html>
