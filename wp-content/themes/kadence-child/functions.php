@@ -60,21 +60,23 @@ function forex_bind_parent_customizer_settings() {
 
 
 // =============================================================================
-// ২. পেজের জন্য কাস্টম ট্যাক্সোনমি — টুল ক্যাটাগরি
+// ২. পেজের জন্য কাস্টম ট্যাক্সোনমি — Tool Categories
 // =============================================================================
 add_action( 'init', 'forex_register_tool_taxonomy' );
 
 function forex_register_tool_taxonomy() {
 	$labels = array(
-		'name'              => 'টুল ক্যাটাগরি',
-		'singular_name'     => 'টুল ক্যাটাগরি',
-		'search_items'      => 'টুল খুঁজুন',
-		'all_items'         => 'সকল টুল ক্যাটাগরি',
-		'edit_item'         => 'এডিট ক্যাটাগরি',
-		'update_item'       => 'আপডেট ক্যাটাগরি',
-		'add_new_item'      => 'নতুন ক্যাটাগরি',
-		'new_item_name'     => 'নতুন ক্যাটাগরির নাম',
-		'menu_name'         => 'টুল ক্যাটাগরি',
+		'name'              => 'Tool Categories',
+		'singular_name'     => 'Tool Category',
+		'search_items'      => 'Search Tool Categories',
+		'all_items'         => 'All Tool Categories',
+		'parent_item'       => 'Parent Tool Category',
+		'parent_item_colon' => 'Parent Tool Category:',
+		'edit_item'         => 'Edit Tool Category',
+		'update_item'       => 'Update Tool Category',
+		'add_new_item'      => 'Add New Tool Category',
+		'new_item_name'     => 'New Tool Category Name',
+		'menu_name'         => 'Tool Categories',
 	);
 
 	register_taxonomy( 'tool_category', 'page', array(
@@ -102,18 +104,19 @@ add_action( 'init', 'forex_register_custom_post_types' );
 
 function forex_register_custom_post_types() {
 
-	// --- ফরেক্স ফরকাস্ট ---
+	// --- Forex Forecast ---
 	register_post_type( 'forecast', array(
 		'labels'             => array(
-			'name'          => 'ফরেক্স ফরকাস্ট',
-			'singular_name' => 'ফরকাস্ট',
-			'add_new'       => 'নতুন ফরকাস্ট',
-			'add_new_item'  => 'নতুন ফরকাস্ট যোগ করুন',
-			'edit_item'     => 'ফরকাস্ট এডিট করুন',
-			'view_item'     => 'ফরকাস্ট দেখুন',
-			'search_items'  => 'ফরকাস্ট খুঁজুন',
-			'all_items'     => 'সকল ফরকাস্ট',
-			'menu_name'     => 'ফরকাস্ট',
+			'name'          => 'Forecasts',
+			'singular_name' => 'Forecast',
+			'add_new'       => 'Add New Forecast',
+			'add_new_item'  => 'Add New Forecast',
+			'edit_item'     => 'Edit Forecast',
+			'view_item'     => 'View Forecast',
+			'search_items'  => 'Search Forecasts',
+			'not_found'     => 'No forecasts found',
+			'all_items'     => 'All Forecasts',
+			'menu_name'     => 'Forecasts',
 		),
 		'public'             => true,
 		'has_archive'        => true,
@@ -124,18 +127,19 @@ function forex_register_custom_post_types() {
 		'show_in_rest'       => true,
 	) );
 
-	// --- ইন্ডিকেটর ---
+	// --- Indicators ---
 	register_post_type( 'indicator', array(
 		'labels'             => array(
-			'name'          => 'ইন্ডিকেটর',
-			'singular_name' => 'ইন্ডিকেটর',
-			'add_new'       => 'নতুন ইন্ডিকেটর',
-			'add_new_item'  => 'নতুন ইন্ডিকেটর যোগ করুন',
-			'edit_item'     => 'ইন্ডিকেটর এডিট করুন',
-			'view_item'     => 'ইন্ডিকেটর দেখুন',
-			'search_items'  => 'ইন্ডিকেটর খুঁজুন',
-			'all_items'     => 'সকল ইন্ডিকেটর',
-			'menu_name'     => 'ইন্ডিকেটর',
+			'name'          => 'Indicators',
+			'singular_name' => 'Indicator',
+			'add_new'       => 'Add New Indicator',
+			'add_new_item'  => 'Add New Indicator',
+			'edit_item'     => 'Edit Indicator',
+			'view_item'     => 'View Indicator',
+			'search_items'  => 'Search Indicators',
+			'not_found'     => 'No indicators found',
+			'all_items'     => 'All Indicators',
+			'menu_name'     => 'Indicators',
 		),
 		'public'             => true,
 		'has_archive'        => true,
@@ -146,18 +150,19 @@ function forex_register_custom_post_types() {
 		'show_in_rest'       => true,
 	) );
 
-	// --- এক্সপার্ট এডভাইজর ---
+	// --- Expert Advisors ---
 	register_post_type( 'ea', array(
 		'labels'             => array(
-			'name'          => 'এক্সপার্ট এডভাইজর',
-			'singular_name' => 'ইএ',
-			'add_new'       => 'নতুন ইএ',
-			'add_new_item'  => 'নতুন ইএ যোগ করুন',
-			'edit_item'     => 'ইএ এডিট করুন',
-			'view_item'     => 'ইএ দেখুন',
-			'search_items'  => 'ইএ খুঁজুন',
-			'all_items'     => 'সকল ইএ',
-			'menu_name'     => 'ইএ',
+			'name'          => 'Expert Advisors',
+			'singular_name' => 'Expert Advisor',
+			'add_new'       => 'Add New EA',
+			'add_new_item'  => 'Add New Expert Advisor',
+			'edit_item'     => 'Edit Expert Advisor',
+			'view_item'     => 'View Expert Advisor',
+			'search_items'  => 'Search Expert Advisors',
+			'not_found'     => 'No expert advisors found',
+			'all_items'     => 'All Expert Advisors',
+			'menu_name'     => 'Expert Advisors',
 		),
 		'public'             => true,
 		'has_archive'        => true,
