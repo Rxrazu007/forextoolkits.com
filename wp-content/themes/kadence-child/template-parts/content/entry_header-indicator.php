@@ -1,0 +1,1 @@
+<?php require_once get_stylesheet_directory() . '/template-parts/content/entry_header-forex-cpt.php';

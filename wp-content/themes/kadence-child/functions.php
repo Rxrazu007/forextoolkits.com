@@ -322,6 +322,22 @@ function forex_posts_shortcode( $atts ) {
 
 function forex_posts_styles() {
 	$css = '
+	/* Force CPT single meta to match regular posts */
+	.single-forecast .cpt-entry-title-holder,
+	.single-indicator .cpt-entry-title-holder,
+	.single-ea .cpt-entry-title-holder {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.single-forecast .cpt-entry-title-holder .entry-title,
+	.single-indicator .cpt-entry-title-holder .entry-title,
+	.single-ea .cpt-entry-title-holder .entry-title {
+		color: #c5c5c5 !important;
+		font-size: 2rem;
+		margin: 0;
+	}
 	.forex-shortcode-posts {
 		display: flex;
 		flex-direction: column;
