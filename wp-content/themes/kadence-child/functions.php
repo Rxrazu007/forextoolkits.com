@@ -31,19 +31,31 @@ function kadence_child_enqueue_styles() {
 
 
 // =============================================================================
-// ১.বি — প্যারেন্ট থিমের Customizer সেটিংস ব্যবহার করবে
-//        (চাইল্ড থিম অ্যাক্টিভেট করলে সাইটের ডিজাইন ভাঙবে না)
+// ১.বি — প্যারেন্ট Kadence থিমের সব Customizer সেটিংস ইনহেরিট করবে
+//        theme_mods_kadence-child থাকলেও প্যারেন্ট থেকেই রিড করবে
 // =============================================================================
-add_filter( 'option_theme_mods_kadence-child', 'forex_use_parent_customizer' );
 
-function forex_use_parent_customizer( $value ) {
-	if ( false === $value || empty( $value ) ) {
-		$parent_mods = get_option( 'theme_mods_kadence', array() );
-		if ( ! empty( $parent_mods ) ) {
-			return $parent_mods;
-		}
+// সব theme_mod সেটিংস — প্যারেন্ট থিম থেকেই নেবে
+add_filter( 'pre_option_theme_mods_kadence-child', 'forex_inherit_parent_mods', 5 );
+
+function forex_inherit_parent_mods( $pre ) {
+	$parent_mods = get_option( 'theme_mods_kadence' );
+	if ( ! empty( $parent_mods ) ) {
+		return $parent_mods;
 	}
-	return $value;
+	return $pre;
+}
+
+// Kadence নির্দিষ্ট অপশনগুলোর জন্যও — প্যারেন্ট ব্যবহার করবে
+// (kadence customizer settings, palette, layout, etc.)
+add_action( 'after_setup_theme', 'forex_bind_parent_customizer_settings' );
+
+function forex_bind_parent_customizer_settings() {
+	// Kadence get_theme_mod কলগুলো প্যারেন্ট থিমের সেটিংস দেখবে
+	add_filter( 'theme_mod_kadence-child', function( $value, $key ) {
+		$parent_mod = get_theme_mod( $key, null ); // প্যারেন্ট থেকে রিড (কোনো ডিফল্ট না দিলে)
+		return ( null !== $parent_mod ) ? $parent_mod : $value;
+	}, 10, 2 );
 }
 
 
@@ -159,20 +171,12 @@ function forex_register_custom_post_types() {
 
 
 // =============================================================================
-// ৪. থিম অ্যাক্টিভেট — পার্মালিংক ফ্লাশ + Customizer কপি
+// ৪. থিম অ্যাক্টিভেট — পার্মালিংক ফ্লাশ
 // =============================================================================
-add_action( 'after_switch_theme', 'forex_after_switch' );
+add_action( 'after_switch_theme', 'forex_flush_rewrite' );
 
-function forex_after_switch() {
+function forex_flush_rewrite() {
 	flush_rewrite_rules();
-
-	// প্রথমবার চাইল্ড থিম অ্যাক্টিভেট করলে প্যারেন্টের Customizer সেটিংস কপি করবে
-	$child_mods  = get_option( 'theme_mods_kadence-child', array() );
-	$parent_mods = get_option( 'theme_mods_kadence', array() );
-
-	if ( empty( $child_mods ) && ! empty( $parent_mods ) ) {
-		update_option( 'theme_mods_kadence-child', $parent_mods );
-	}
 }
 
 
