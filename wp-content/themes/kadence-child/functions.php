@@ -152,6 +152,20 @@ function forex_flush_rewrite() {
 //     Menu item must have CSS class:  menu-dynamic-tools
 // =============================================================================
 add_filter( 'wp_nav_menu_objects', 'forex_dynamic_menu_items', 10, 2 );
+add_action( 'wp_enqueue_scripts', 'forex_dynamic_menu_styles' );
+
+function forex_dynamic_menu_styles() {
+	$css = '
+	/* Dynamic tools submenu — Kadence-compatible */
+	.dynamic-tool-item > a {
+		border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+	}
+	.dynamic-tool-item:last-child > a {
+		border-bottom: none !important;
+	}
+	';
+	wp_add_inline_style( 'kadence-style', $css );
+}
 
 function forex_dynamic_menu_items( $items, $args ) {
 
@@ -170,7 +184,9 @@ function forex_dynamic_menu_items( $items, $args ) {
 	}
 
 	$parent_item = $items[ $tool_parent_key ];
-	$tool_terms  = get_terms( array(
+
+	// WP_Query দিয়ে ফিল্টার (get_pages tax_query বাগি)
+	$tool_terms = get_terms( array(
 		'taxonomy'   => 'tool_category',
 		'fields'     => 'ids',
 		'hide_empty' => true,
@@ -180,37 +196,60 @@ function forex_dynamic_menu_items( $items, $args ) {
 		return $items;
 	}
 
-	$tools = get_pages( array(
-		'tax_query'   => array( array(
+	$query = new WP_Query( array(
+		'post_type'      => 'page',
+		'post_status'    => 'publish',
+		'posts_per_page' => 20,
+		'orderby'        => 'menu_order',
+		'order'          => 'ASC',
+		'tax_query'      => array( array(
 			'taxonomy'         => 'tool_category',
 			'field'            => 'term_id',
 			'terms'            => $tool_terms,
 			'include_children' => true,
 		) ),
-		'sort_column' => 'menu_order',
-		'sort_order'  => 'ASC',
 	) );
+
+	$tools = $query->posts;
 
 	if ( empty( $tools ) ) {
 		return $items;
 	}
+
+	// Kadence-compatible classes + hover-ready structure
+	$parent_item->classes[] = 'menu-item-has-children';
+	$parent_item->classes[] = 'menu-item-has-toggle';
 
 	$child_items = array();
 	$offset      = 0;
 
 	foreach ( $tools as $page ) {
 		$child = new stdClass();
-		$child->ID               = $page->ID;
-		$child->db_id            = 0;
-		$child->menu_item_parent = $parent_item->ID;
-		$child->object_id        = $page->ID;
-		$child->object           = 'page';
-		$child->type             = 'post_type';
-		$child->title            = get_the_title( $page );
-		$child->url              = get_permalink( $page );
-		$child->menu_order       = $parent_item->menu_order * 100 + $offset + 1;
-		$child->classes          = array( 'dynamic-tool-item' );
-		$child_items[]           = $child;
+		$child->ID                    = $page->ID;
+		$child->db_id                 = 0;
+		$child->menu_item_parent      = $parent_item->ID;
+		$child->object_id             = $page->ID;
+		$child->object                = 'page';
+		$child->type                  = 'post_type';
+		$child->type_label            = 'Page';
+		$child->title                 = get_the_title( $page );
+		$child->url                   = get_permalink( $page );
+		$child->target                = '';
+		$child->attr_title            = '';
+		$child->description           = '';
+		$child->xfn                   = '';
+		$child->menu_order            = $parent_item->menu_order * 100 + $offset + 1;
+		$child->current               = ( get_queried_object_id() == $page->ID );
+		$child->current_item_ancestor = false;
+		$child->current_item_parent   = false;
+		// Kadence uses these classes for submenu styling
+		$child->classes = array(
+			'menu-item',
+			'menu-item-type-post_type',
+			'menu-item-object-page',
+			'dynamic-tool-item',
+		);
+		$child_items[] = $child;
 		$offset++;
 	}
 
