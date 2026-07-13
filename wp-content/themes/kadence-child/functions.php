@@ -92,12 +92,13 @@ function forex_register_custom_post_types() {
 			'all_items'     => 'All Forecasts',
 			'menu_name'     => 'Forecasts',
 		),
-		'public'       => true,
-		'has_archive'  => true,
-		'rewrite'      => array( 'slug' => 'forecast' ),
-		'menu_icon'    => 'dashicons-chart-area',
-		'supports'     => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
-		'show_in_rest' => true,
+		'public'          => true,
+		'has_archive'     => true,
+		'rewrite'         => array( 'slug' => 'forecast' ),
+		'menu_icon'       => 'dashicons-chart-area',
+		'supports'        => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'comments', 'author' ),
+		'show_in_rest'    => true,
+		'publicly_queryable' => true,
 	) );
 
 	register_post_type( 'indicator', array(
@@ -110,12 +111,13 @@ function forex_register_custom_post_types() {
 			'all_items'     => 'All Indicators',
 			'menu_name'     => 'Indicators',
 		),
-		'public'       => true,
-		'has_archive'  => true,
-		'rewrite'      => array( 'slug' => 'indicator' ),
-		'menu_icon'    => 'dashicons-visibility',
-		'supports'     => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
-		'show_in_rest' => true,
+		'public'          => true,
+		'has_archive'     => true,
+		'rewrite'         => array( 'slug' => 'indicator' ),
+		'menu_icon'       => 'dashicons-visibility',
+		'supports'        => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'comments', 'author' ),
+		'show_in_rest'    => true,
+		'publicly_queryable' => true,
 	) );
 
 	register_post_type( 'ea', array(
@@ -128,12 +130,13 @@ function forex_register_custom_post_types() {
 			'all_items'     => 'All Expert Advisors',
 			'menu_name'     => 'Expert Advisors',
 		),
-		'public'       => true,
-		'has_archive'  => true,
-		'rewrite'      => array( 'slug' => 'expert-advisor' ),
-		'menu_icon'    => 'dashicons-admin-generic',
-		'supports'     => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
-		'show_in_rest' => true,
+		'public'          => true,
+		'has_archive'     => true,
+		'rewrite'         => array( 'slug' => 'expert-advisor' ),
+		'menu_icon'       => 'dashicons-admin-generic',
+		'supports'        => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'comments', 'author' ),
+		'show_in_rest'    => true,
+		'publicly_queryable' => true,
 	) );
 }
 
