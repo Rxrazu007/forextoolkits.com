@@ -155,7 +155,7 @@ add_action( 'wp_enqueue_scripts', 'forex_cpt_archive_styles', 20 );
 
 function forex_cpt_archive_styles() {
 	$css = '
-	/* CPT archive: reduce header padding */
+	/* CPT archive: reduce header spacing */
 	.post-type-archive-forecast .entry-hero,
 	.post-type-archive-indicator .entry-hero,
 	.post-type-archive-ea .entry-hero {
@@ -203,29 +203,35 @@ function forex_cpt_archive_styles() {
 		background: rgba(255,255,255,0.05) !important;
 		padding: 1.25rem !important;
 	}
-	/* CPT archive: sidebar — dark background */
-	.post-type-archive-forecast .widget-area,
-	.post-type-archive-indicator .widget-area,
-	.post-type-archive-ea .widget-area {
+	/* Make sidebar area dark (ready for ads) */
+	.post-type-archive-forecast #secondary,
+	.post-type-archive-indicator #secondary,
+	.post-type-archive-ea #secondary {
 		background: #16162a !important;
 		padding: 1.5rem 1rem !important;
 		border-radius: 8px !important;
-		border: 1px solid rgba(255,255,255,0.06) !important;
+		border: 1px solid rgba(255,255,255,0.08) !important;
 	}
-	.post-type-archive-forecast .widget-area .widget-title,
-	.post-type-archive-indicator .widget-area .widget-title,
-	.post-type-archive-ea .widget-area .widget-title {
+	.post-type-archive-forecast #secondary .widget-title,
+	.post-type-archive-indicator #secondary .widget-title,
+	.post-type-archive-ea #secondary .widget-title {
 		color: #e0e0e0 !important;
 	}
-	.post-type-archive-forecast .widget-area .widget,
-	.post-type-archive-indicator .widget-area .widget,
-	.post-type-archive-ea .widget-area .widget {
+	.post-type-archive-forecast #secondary .widget,
+	.post-type-archive-indicator #secondary .widget,
+	.post-type-archive-ea #secondary .widget {
 		color: #b0b0b0 !important;
 	}
-	.post-type-archive-forecast .widget-area a,
-	.post-type-archive-indicator .widget-area a,
-	.post-type-archive-ea .widget-area a {
+	.post-type-archive-forecast #secondary a,
+	.post-type-archive-indicator #secondary a,
+	.post-type-archive-ea #secondary a {
 		color: #8ab4f8 !important;
+	}
+	/* Make content area background transparent so dark bg shows through */
+	.post-type-archive-forecast .content-container,
+	.post-type-archive-indicator .content-container,
+	.post-type-archive-ea .content-container {
+		padding: 0 1rem !important;
 	}
 	';
 	wp_add_inline_style( 'kadence-child-style', $css );
