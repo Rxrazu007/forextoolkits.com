@@ -39,10 +39,11 @@ function kadence_child_enqueue_styles() {
 add_filter( 'pre_option_theme_mods_kadence-child', 'forex_inherit_parent_mods', 5 );
 
 function forex_inherit_parent_mods( $pre ) {
+	// $pre = theme_mods_kadence-child-এর বর্তমান unfiltered value
+	// এটাকে get_option() দিয়ে আবার কল করলে ইনফিনিট রিকার্শন হবে!
+	$child_mods  = is_array( $pre ) ? $pre : array();
 	$parent_mods = get_option( 'theme_mods_kadence', array() );
-	$child_mods  = get_option( 'theme_mods_kadence-child', array() );
 
-	// Merge: চাইল্ডের সেটিংস প্যারেন্টকে ওভাররাইড করবে (যেমন nav_menu_locations)
 	return array_merge( $parent_mods, $child_mods );
 }
 
