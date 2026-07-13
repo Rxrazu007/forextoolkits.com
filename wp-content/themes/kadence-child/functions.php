@@ -61,6 +61,7 @@ function forex_register_tool_taxonomy() {
 		),
 		'show_ui'           => true,
 		'show_admin_column' => true,
+		'show_in_rest'      => true,
 		'query_var'         => true,
 		'rewrite'           => array( 'slug' => 'tool-category' ),
 		'capabilities'      => array(
