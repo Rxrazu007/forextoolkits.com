@@ -1,11 +1,8 @@
 <?php
 /**
- * Template for displaying CPT single posts (forecast, indicator, ea)
- * Modified version of Kadence's single-entry.php without post-type checks
- *
- * @package kadence-child
+ * Shared entry template for CPTs (forecast, indicator, ea)
+ * Same as Kadence's single-entry.php but without 'post' === get_post_type() checks
  */
-
 namespace Kadence;
 
 ?>
@@ -36,19 +33,19 @@ if ( kadence()->show_feature_above() ) {
 		do_action( 'kadence_single_after_inner_content' );
 		?>
 	</div>
-</article><!-- #post-<?php the_ID(); ?> -->
+</article>
 
 <?php
 do_action( 'kadence_single_after_content' );
 
 if ( is_singular( get_post_type() ) ) {
-	// Author box — show for all post types
+	// Author box
 	if ( kadence()->option( 'post_author_box' ) ) {
 		get_template_part( 'template-parts/content/entry_author', get_post_type() );
 	}
 
-	// Post navigation — show for all post types with archives
-	if ( ( get_post_type_object( get_post_type() )->has_archive ) && kadence()->show_post_navigation() ) {
+	// Post navigation (CPTs have archives)
+	if ( get_post_type_object( get_post_type() )->has_archive && kadence()->show_post_navigation() ) {
 		if ( kadence()->option( 'post_footer_area_boxed' ) ) {
 			echo '<div class="post-navigation-wrap content-bg entry-content-wrap entry">';
 		}
@@ -66,7 +63,7 @@ if ( is_singular( get_post_type() ) ) {
 		}
 	}
 
-	// Comments — show when post type supports it
+	// Comments
 	if ( kadence()->show_comments() ) {
 		comments_template();
 	}
