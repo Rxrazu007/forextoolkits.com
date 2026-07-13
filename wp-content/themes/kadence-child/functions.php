@@ -181,6 +181,26 @@ function forex_cpt_archive_styles() {
 	.post-type-archive-ea .entry-title a:hover {
 		color: #ffffff !important;
 	}
+
+	/* Single post/page headings — light color for dark bg */
+	.single .entry-title,
+	.single-forecast .entry-title,
+	.single-indicator .entry-title,
+	.single-ea .entry-title {
+		color: #e8e8e8 !important;
+	}
+	.single .entry-title a,
+	.single-forecast .entry-title a,
+	.single-indicator .entry-title a,
+	.single-ea .entry-title a {
+		color: #e8e8e8 !important;
+	}
+	.single .entry-title a:hover,
+	.single-forecast .entry-title a:hover,
+	.single-indicator .entry-title a:hover,
+	.single-ea .entry-title a:hover {
+		color: #ffffff !important;
+	}
 	.post-type-archive-forecast .entry-summary,
 	.post-type-archive-indicator .entry-summary,
 	.post-type-archive-ea .entry-summary {
