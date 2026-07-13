@@ -182,18 +182,18 @@ function forex_cpt_archive_styles() {
 		color: #ffffff !important;
 	}
 
-	/* Single post/page headings — light color for dark bg */
+	/* Single post/page headings — readable on dark bg */
 	.single .entry-title,
 	.single-forecast .entry-title,
 	.single-indicator .entry-title,
 	.single-ea .entry-title {
-		color: #e8e8e8 !important;
+		color: #c5c5c5 !important;
 	}
 	.single .entry-title a,
 	.single-forecast .entry-title a,
 	.single-indicator .entry-title a,
 	.single-ea .entry-title a {
-		color: #e8e8e8 !important;
+		color: #c5c5c5 !important;
 	}
 	.single .entry-title a:hover,
 	.single-forecast .entry-title a:hover,
