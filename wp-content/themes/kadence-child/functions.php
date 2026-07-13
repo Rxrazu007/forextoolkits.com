@@ -3,12 +3,13 @@
  * Kadence Child Theme — functions.php
  * 
  * Adds: Custom Post Types (Forecast, Indicator, Expert Advisor),
- *       Tool Categories taxonomy for Pages,
- *       Dynamic sub-menu for tool pages
+ *       Tool Categories taxonomy for Pages
+ * 
+ * Menu management: Use Appearance → Menus in WordPress Dashboard
  */
 
 // =============================================================================
-// ১. Parent theme styles
+// １. Parent theme styles
 // =============================================================================
 add_action( 'wp_enqueue_scripts', 'kadence_child_enqueue_styles' );
 
@@ -29,7 +30,7 @@ function kadence_child_enqueue_styles() {
 
 
 // =============================================================================
-// ২. Inherit parent Kadence Customizer settings
+// ２. Inherit parent Kadence Customizer settings
 // =============================================================================
 add_filter( 'pre_option_theme_mods_kadence-child', 'forex_inherit_parent_mods', 5 );
 
@@ -41,7 +42,7 @@ function forex_inherit_parent_mods( $pre ) {
 
 
 // =============================================================================
-// ৩. Tool Categories taxonomy (for Pages)
+// ３. Tool Categories taxonomy (for Pages)
 // =============================================================================
 add_action( 'init', 'forex_register_tool_taxonomy' );
 
@@ -75,7 +76,7 @@ function forex_register_tool_taxonomy() {
 
 
 // =============================================================================
-// ৪. Custom Post Types — Forecast, Indicator, Expert Advisor
+// ４. Custom Post Types — Forecast, Indicator, Expert Advisor
 // =============================================================================
 add_action( 'init', 'forex_register_custom_post_types' );
 
@@ -138,124 +139,10 @@ function forex_register_custom_post_types() {
 
 
 // =============================================================================
-// ৫. Flush permalinks on theme switch
+// ５. Flush permalinks on theme switch
 // =============================================================================
 add_action( 'after_switch_theme', 'forex_flush_rewrite' );
 
 function forex_flush_rewrite() {
 	flush_rewrite_rules();
-}
-
-
-// =============================================================================
-// ৬. Dynamic sub-menu — auto-shows tool_category pages under menu item
-//     Menu item must have CSS class:  menu-dynamic-tools
-// =============================================================================
-add_filter( 'wp_nav_menu_objects', 'forex_dynamic_menu_items', 10, 2 );
-add_action( 'wp_enqueue_scripts', 'forex_dynamic_menu_styles' );
-
-function forex_dynamic_menu_styles() {
-	$css = '
-	/* Dynamic tools submenu — Kadence-compatible */
-	.dynamic-tool-item > a {
-		border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-	}
-	.dynamic-tool-item:last-child > a {
-		border-bottom: none !important;
-	}
-	';
-	wp_add_inline_style( 'kadence-style', $css );
-}
-
-function forex_dynamic_menu_items( $items, $args ) {
-
-	$tool_parent_key = null;
-
-	foreach ( $items as $key => $item ) {
-		$classes = ! empty( $item->classes ) ? $item->classes : array();
-		if ( in_array( 'menu-dynamic-tools', $classes, true ) ) {
-			$tool_parent_key = $key;
-			break;
-		}
-	}
-
-	if ( null === $tool_parent_key ) {
-		return $items;
-	}
-
-	$parent_item = $items[ $tool_parent_key ];
-
-	// WP_Query দিয়ে ফিল্টার (get_pages tax_query বাগি)
-	$tool_terms = get_terms( array(
-		'taxonomy'   => 'tool_category',
-		'fields'     => 'ids',
-		'hide_empty' => false,
-	) );
-
-	if ( empty( $tool_terms ) || is_wp_error( $tool_terms ) ) {
-		return $items;
-	}
-
-	// পেজ বাই পেজ চেক করে ফিল্টার — সবচেয়ে reliable
-	$all_pages = get_pages( array(
-		'sort_column' => 'menu_order',
-		'sort_order'  => 'ASC',
-		'number'      => 50,
-	) );
-
-	$tools = array();
-	foreach ( $all_pages as $page ) {
-		$page_terms = wp_get_post_terms( $page->ID, 'tool_category', array( 'fields' => 'ids' ) );
-		if ( ! empty( $page_terms ) && ! is_wp_error( $page_terms ) ) {
-			// Check if page has any of our tool categories
-			if ( array_intersect( $page_terms, $tool_terms ) ) {
-				$tools[] = $page;
-			}
-		}
-	}
-
-	if ( empty( $tools ) ) {
-		return $items;
-	}
-
-	// Kadence-compatible classes + hover-ready structure
-	$parent_item->classes[] = 'menu-item-has-children';
-	$parent_item->classes[] = 'menu-item-has-toggle';
-
-	$child_items = array();
-	$offset      = 0;
-
-	foreach ( $tools as $page ) {
-		$child = new stdClass();
-		$child->ID                    = $page->ID;
-		$child->db_id                 = 0;
-		$child->menu_item_parent      = $parent_item->ID;
-		$child->object_id             = $page->ID;
-		$child->object                = 'page';
-		$child->type                  = 'post_type';
-		$child->type_label            = 'Page';
-		$child->title                 = get_the_title( $page );
-		$child->url                   = get_permalink( $page );
-		$child->target                = '';
-		$child->attr_title            = '';
-		$child->description           = '';
-		$child->xfn                   = '';
-		$child->menu_order            = $parent_item->menu_order * 100 + $offset + 1;
-		$child->current               = ( get_queried_object_id() == $page->ID );
-		$child->current_item_ancestor = false;
-		$child->current_item_parent   = false;
-		// Kadence uses these classes for submenu styling
-		$child->classes = array(
-			'menu-item',
-			'menu-item-type-post_type',
-			'menu-item-object-page',
-			'dynamic-tool-item',
-		);
-		$child_items[] = $child;
-		$offset++;
-	}
-
-	array_splice( $items, $tool_parent_key + 1, 0, $child_items );
-
-	return $items;
 }
