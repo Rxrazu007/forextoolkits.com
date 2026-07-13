@@ -322,21 +322,23 @@ function forex_posts_shortcode( $atts ) {
 
 function forex_posts_styles() {
 	$css = '
-	/* Force CPT single meta to match regular posts */
-	.single-forecast .cpt-entry-title-holder,
-	.single-indicator .cpt-entry-title-holder,
-	.single-ea .cpt-entry-title-holder {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
+	/* CPT single: meta styling */
+	.single-forecast .entry-header .entry-meta,
+	.single-indicator .entry-header .entry-meta,
+	.single-ea .entry-header .entry-meta {
+		color: #999 !important;
+		font-size: 0.85rem;
+		margin: 0 0 0.5rem 0;
 	}
-	.single-forecast .cpt-entry-title-holder .entry-title,
-	.single-indicator .cpt-entry-title-holder .entry-title,
-	.single-ea .cpt-entry-title-holder .entry-title {
+	.single-forecast .entry-header .entry-meta a,
+	.single-indicator .entry-header .entry-meta a,
+	.single-ea .entry-header .entry-meta a {
+		color: #8ab4f8 !important;
+	}
+	.single-forecast .entry-header .entry-title,
+	.single-indicator .entry-header .entry-title,
+	.single-ea .entry-header .entry-title {
 		color: #c5c5c5 !important;
-		font-size: 2rem;
-		margin: 0;
 	}
 	.forex-shortcode-posts {
 		display: flex;
