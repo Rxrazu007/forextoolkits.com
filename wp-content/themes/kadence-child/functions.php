@@ -236,3 +236,141 @@ function forex_cpt_archive_styles() {
 	';
 	wp_add_inline_style( 'kadence-child-style', $css );
 }
+
+
+// =============================================================================
+// ৭. Shortcode: [forex_posts type="indicator|ea|forecast" count="10"]
+//     Blog-style listing with pagination. Use in any Gutenberg page.
+// =============================================================================
+add_shortcode( 'forex_posts', 'forex_posts_shortcode' );
+add_action( 'wp_enqueue_scripts', 'forex_posts_styles', 25 );
+
+function forex_posts_shortcode( $atts ) {
+	$a = shortcode_atts( array(
+		'type'  => 'forecast',
+		'count' => 10,
+	), $atts );
+
+	$paged = max( 1, get_query_var( 'paged' ) ?: 1 );
+
+	$q = new WP_Query( array(
+		'post_type'      => sanitize_key( $a['type'] ),
+		'posts_per_page' => max( 1, (int) $a['count'] ),
+		'paged'          => $paged,
+		'post_status'    => 'publish',
+	) );
+
+	if ( ! $q->have_posts() ) {
+		return '<p>No posts found.</p>';
+	}
+
+	ob_start();
+	echo '<div class="forex-shortcode-posts">';
+	while ( $q->have_posts() ) {
+		$q->the_post();
+		?>
+		<article class="forex-sc-item">
+			<h3 class="forex-sc-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
+			<div class="forex-sc-meta"><?php echo get_the_date(); ?></div>
+			<div class="forex-sc-excerpt"><?php the_excerpt(); ?></div>
+			<a class="forex-sc-readmore" href="<?php the_permalink(); ?>">Read More <span class="sc-arrow">→</span></a>
+		</article>
+		<?php
+	}
+	echo '</div>';
+
+	// Pagination
+	if ( $q->max_num_pages > 1 ) {
+		echo '<div class="forex-sc-pagination">';
+		echo paginate_links( array(
+			'base'    => str_replace( PHP_INT_MAX, '%#%', esc_url( get_pagenum_link( PHP_INT_MAX ) ) ),
+			'format'  => '?paged=%#%',
+			'current' => $paged,
+			'total'   => $q->max_num_pages,
+			'prev_text' => '‹ Previous',
+			'next_text' => 'Next ›',
+		) );
+		echo '</div>';
+	}
+
+	wp_reset_postdata();
+	return ob_get_clean();
+}
+
+function forex_posts_styles() {
+	$css = '
+	.forex-shortcode-posts {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.forex-sc-item {
+		background: rgba(255,255,255,0.05);
+		padding: 1.5rem;
+		border-radius: 8px;
+		border: 1px solid rgba(255,255,255,0.08);
+	}
+	.forex-sc-title {
+		margin: 0 0 0.25rem 0;
+		font-size: 1.3rem;
+	}
+	.forex-sc-title a {
+		color: #e8e8e8;
+		text-decoration: none;
+	}
+	.forex-sc-title a:hover {
+		color: #ffffff;
+		text-decoration: underline;
+	}
+	.forex-sc-meta {
+		color: #888;
+		font-size: 0.85rem;
+		margin-bottom: 0.75rem;
+	}
+	.forex-sc-excerpt {
+		color: #b0b0b0;
+		line-height: 1.6;
+		margin-bottom: 0.75rem;
+	}
+	.forex-sc-readmore {
+		color: #8ab4f8;
+		text-decoration: none;
+		font-weight: 600;
+	}
+	.forex-sc-readmore:hover {
+		color: #fff;
+		text-decoration: underline;
+	}
+	.sc-arrow {
+		display: inline-block;
+		transition: transform 0.2s;
+	}
+	.forex-sc-readmore:hover .sc-arrow {
+		transform: translateX(4px);
+	}
+	.forex-sc-pagination {
+		margin-top: 2rem;
+		text-align: center;
+		display: flex;
+		gap: 0.5rem;
+		justify-content: center;
+	}
+	.forex-sc-pagination a,
+	.forex-sc-pagination span {
+		background: rgba(255,255,255,0.08);
+		color: #b0b0b0;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		text-decoration: none;
+	}
+	.forex-sc-pagination a:hover {
+		background: rgba(255,255,255,0.15);
+		color: #fff;
+	}
+	.forex-sc-pagination .current {
+		background: #8ab4f8;
+		color: #111;
+	}
+	';
+	wp_add_inline_style( 'kadence-child-style', $css );
+}
