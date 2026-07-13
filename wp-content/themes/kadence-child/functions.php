@@ -322,6 +322,77 @@ function forex_posts_shortcode( $atts ) {
 
 function forex_posts_styles() {
 	$css = '
+	/* CPT single: content headings — match header color */
+	.single-forecast .entry-content h2,
+	.single-indicator .entry-content h2,
+	.single-ea .entry-content h2,
+	.single-forecast .entry-content h3,
+	.single-indicator .entry-content h3,
+	.single-ea .entry-content h3 {
+		color: #c5c5c5 !important;
+	}
+	.single-forecast .entry-content p,
+	.single-indicator .entry-content p,
+	.single-ea .entry-content p {
+		color: #b8b8b8 !important;
+	}
+
+	/* Comment box: dark theme */
+	#comments,
+	#respond {
+		background: rgba(255,255,255,0.03) !important;
+		padding: 1.5rem !important;
+		border-radius: 8px !important;
+		border: 1px solid rgba(255,255,255,0.08) !important;
+		margin-top: 1.5rem !important;
+	}
+	#comments .comment-body {
+		padding: 1rem 0 !important;
+		border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+	}
+	#comments .comment-author .fn a,
+	#comments .comment-metadata a {
+		color: #b0b0b0 !important;
+	}
+	#comments .comment-author .fn a:hover,
+	#comments .comment-metadata a:hover {
+		color: #fff !important;
+	}
+	#comments .reply a {
+		color: #8ab4f8 !important;
+	}
+	#respond label,
+	#respond .comment-notes {
+		color: #b0b0b0 !important;
+	}
+	#respond input[type="text"],
+	#respond input[type="email"],
+	#respond input[type="url"],
+	#respond textarea {
+		background: rgba(255,255,255,0.06) !important;
+		border: 1px solid rgba(255,255,255,0.12) !important;
+		color: #e0e0e0 !important;
+		border-radius: 4px !important;
+		padding: 0.6rem 0.8rem !important;
+	}
+	#respond input:focus,
+	#respond textarea:focus {
+		border-color: #8ab4f8 !important;
+		outline: none !important;
+	}
+	#respond .form-submit input#submit {
+		background: #8ab4f8 !important;
+		color: #111 !important;
+		border: none !important;
+		padding: 0.6rem 1.5rem !important;
+		border-radius: 4px !important;
+		font-weight: 600 !important;
+		cursor: pointer !important;
+	}
+	#respond .form-submit input#submit:hover {
+		background: #6d9fd8 !important;
+	}
+
 	/* CPT single: meta styling */
 	.single-forecast .entry-header .entry-meta,
 	.single-indicator .entry-header .entry-meta,
