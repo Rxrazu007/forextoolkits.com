@@ -184,7 +184,7 @@ function forex_flush_rewrite() {
 	flush_rewrite_rules();
 }
 
-// শুধু একবার রান হবে — অটোমেটিক প্রাইমারি মেনু তৈরি করবে
+// শুধু একবার রান হবে — ফ্রেশ Primary Menu তৈরি করবে
 add_action( 'init', 'forex_auto_create_menu' );
 
 function forex_auto_create_menu() {
@@ -192,46 +192,41 @@ function forex_auto_create_menu() {
 		return;
 	}
 
-	$menu_name = 'Primary Menu';
-	$menu_obj  = wp_get_nav_menu_object( $menu_name );
-
-	if ( ! $menu_obj ) {
-		$menu_id = wp_create_nav_menu( $menu_name );
-	} else {
-		$menu_id = $menu_obj->term_id;
+	// পুরনো Primary Menu রিমুভ করি
+	$old_menu = wp_get_nav_menu_object( 'Primary Menu' );
+	if ( $old_menu ) {
+		wp_delete_nav_menu( $old_menu->slug );
 	}
 
-	// Assign to Kadence primary menu location
-	$locations               = get_theme_mod( 'nav_menu_locations', array() );
-	$locations['primary']    = $menu_id;
+	// Fresh নতুন মেনু
+	$menu_id = wp_create_nav_menu( 'Primary Menu' );
+
+	// Kadence primary location-এ assign
+	$locations            = get_theme_mod( 'nav_menu_locations', array() );
+	$locations['primary'] = $menu_id;
 	set_theme_mod( 'nav_menu_locations', $locations );
 
-	// Menu items to create (only if menu is empty)
-	$existing_items = wp_get_nav_menu_items( $menu_id );
+	$items = array(
+		array( 'text' => 'Live Forex Tools',    'url' => '#',                          'class' => 'menu-dynamic-tools' ),
+		array( 'text' => 'Forex Calculators',   'url' => '#',                          'class' => 'menu-dynamic-calculators' ),
+		array( 'text' => 'Indicators',          'url' => home_url( '/indicator/' ) ),
+		array( 'text' => 'Expert Advisors',     'url' => home_url( '/expert-advisor/' ) ),
+		array( 'text' => 'Forex Forecast',      'url' => home_url( '/forecast/' ) ),
+		array( 'text' => 'Blog',                'url' => home_url( '/blog/' ) ),
+	);
 
-	if ( empty( $existing_items ) ) {
-		$items = array(
-			array( 'text' => 'Live Forex Tools',    'url' => '#',                          'class' => 'menu-dynamic-tools' ),
-			array( 'text' => 'Forex Calculators',   'url' => '#',                          'class' => 'menu-dynamic-calculators' ),
-			array( 'text' => 'Indicators',          'url' => home_url( '/indicator/' ) ),
-			array( 'text' => 'Expert Advisors',     'url' => home_url( '/expert-advisor/' ) ),
-			array( 'text' => 'Forex Forecast',      'url' => home_url( '/forecast/' ) ),
-			array( 'text' => 'Blog',                'url' => home_url( '/blog/' ) ),
+	foreach ( $items as $order => $item ) {
+		$item_data = array(
+			'menu-item-title'    => $item['text'],
+			'menu-item-url'      => $item['url'],
+			'menu-item-status'   => 'publish',
+			'menu-item-position' => $order + 1,
+			'menu-item-type'     => 'custom',
 		);
-
-		foreach ( $items as $order => $item ) {
-			$item_data = array(
-				'menu-item-title'    => $item['text'],
-				'menu-item-url'      => $item['url'],
-				'menu-item-status'   => 'publish',
-				'menu-item-position' => $order + 1,
-				'menu-item-type'     => 'custom',
-			);
-			if ( ! empty( $item['class'] ) ) {
-				$item_data['menu-item-classes'] = $item['class'];
-			}
-			wp_update_nav_menu_item( $menu_id, 0, $item_data );
+		if ( ! empty( $item['class'] ) ) {
+			$item_data['menu-item-classes'] = $item['class'];
 		}
+		wp_update_nav_menu_item( $menu_id, 0, $item_data );
 	}
 
 	update_option( 'forex_menu_created', true );
