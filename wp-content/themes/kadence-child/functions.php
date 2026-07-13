@@ -337,15 +337,7 @@ function forex_posts_styles() {
 		color: #b8b8b8 !important;
 	}
 
-	/* Comment box: dark theme */
-	#comments,
-	#respond {
-		background: rgba(255,255,255,0.03) !important;
-		padding: 1.5rem !important;
-		border-radius: 8px !important;
-		border: 1px solid rgba(255,255,255,0.08) !important;
-		margin-top: 1.5rem !important;
-	}
+	/* Comment box: dark theme — no double bg, outer card suffices */
 	#comments .comment-body {
 		padding: 1rem 0 !important;
 		border-bottom: 1px solid rgba(255,255,255,0.06) !important;
