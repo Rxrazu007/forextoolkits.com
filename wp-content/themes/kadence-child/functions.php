@@ -189,28 +189,30 @@ function forex_dynamic_menu_items( $items, $args ) {
 	$tool_terms = get_terms( array(
 		'taxonomy'   => 'tool_category',
 		'fields'     => 'ids',
-		'hide_empty' => true,
+		'hide_empty' => false,
 	) );
 
 	if ( empty( $tool_terms ) || is_wp_error( $tool_terms ) ) {
 		return $items;
 	}
 
-	$query = new WP_Query( array(
-		'post_type'      => 'page',
-		'post_status'    => 'publish',
-		'posts_per_page' => 20,
-		'orderby'        => 'menu_order',
-		'order'          => 'ASC',
-		'tax_query'      => array( array(
-			'taxonomy'         => 'tool_category',
-			'field'            => 'term_id',
-			'terms'            => $tool_terms,
-			'include_children' => true,
-		) ),
+	// পেজ বাই পেজ চেক করে ফিল্টার — সবচেয়ে reliable
+	$all_pages = get_pages( array(
+		'sort_column' => 'menu_order',
+		'sort_order'  => 'ASC',
+		'number'      => 50,
 	) );
 
-	$tools = $query->posts;
+	$tools = array();
+	foreach ( $all_pages as $page ) {
+		$page_terms = wp_get_post_terms( $page->ID, 'tool_category', array( 'fields' => 'ids' ) );
+		if ( ! empty( $page_terms ) && ! is_wp_error( $page_terms ) ) {
+			// Check if page has any of our tool categories
+			if ( array_intersect( $page_terms, $tool_terms ) ) {
+				$tools[] = $page;
+			}
+		}
+	}
 
 	if ( empty( $tools ) ) {
 		return $items;
