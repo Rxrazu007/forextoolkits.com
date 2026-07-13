@@ -8,17 +8,42 @@
  */
 
 // =============================================================================
-// ১. প্যারেন্ট থিমের স্টাইল লোড
+// ১. প্যারেন্ট থিমের স্টাইল লোড (Kadence কম্প্যাটিবল)
 // =============================================================================
 add_action( 'wp_enqueue_scripts', 'kadence_child_enqueue_styles' );
 
 function kadence_child_enqueue_styles() {
+	// প্যারেন্ট Kadence থিমের style.css লোড
 	wp_enqueue_style(
-		'kadence-parent-style',
+		'kadence-style',
 		get_template_directory_uri() . '/style.css',
 		array(),
 		wp_get_theme()->parent()->get( 'Version' )
 	);
+	// চাইল্ড থিমের style.css - প্যারেন্টের পরে লোড হবে
+	wp_enqueue_style(
+		'kadence-child-style',
+		get_stylesheet_directory_uri() . '/style.css',
+		array( 'kadence-style' ),
+		wp_get_theme()->get( 'Version' )
+	);
+}
+
+
+// =============================================================================
+// ১.বি — প্যারেন্ট থিমের Customizer সেটিংস ব্যবহার করবে
+//        (চাইল্ড থিম অ্যাক্টিভেট করলে সাইটের ডিজাইন ভাঙবে না)
+// =============================================================================
+add_filter( 'option_theme_mods_kadence-child', 'forex_use_parent_customizer' );
+
+function forex_use_parent_customizer( $value ) {
+	if ( false === $value || empty( $value ) ) {
+		$parent_mods = get_option( 'theme_mods_kadence', array() );
+		if ( ! empty( $parent_mods ) ) {
+			return $parent_mods;
+		}
+	}
+	return $value;
 }
 
 
@@ -134,13 +159,23 @@ function forex_register_custom_post_types() {
 
 
 // =============================================================================
-// ৪. থিম অ্যাক্টিভেট/ডিঅ্যাক্টিভেট — পার্মালিংক ফ্লাশ
+// ৪. থিম অ্যাক্টিভেট — পার্মালিংক ফ্লাশ + Customizer কপি
 // =============================================================================
-add_action( 'after_switch_theme', 'forex_flush_rewrite' );
+add_action( 'after_switch_theme', 'forex_after_switch' );
 
-function forex_flush_rewrite() {
+function forex_after_switch() {
 	flush_rewrite_rules();
+
+	// প্রথমবার চাইল্ড থিম অ্যাক্টিভেট করলে প্যারেন্টের Customizer সেটিংস কপি করবে
+	$child_mods  = get_option( 'theme_mods_kadence-child', array() );
+	$parent_mods = get_option( 'theme_mods_kadence', array() );
+
+	if ( empty( $child_mods ) && ! empty( $parent_mods ) ) {
+		update_option( 'theme_mods_kadence-child', $parent_mods );
+	}
 }
+
+
 
 
 // =============================================================================
