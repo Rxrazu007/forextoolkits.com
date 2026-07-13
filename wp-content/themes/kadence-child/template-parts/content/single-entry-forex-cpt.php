@@ -23,14 +23,35 @@ if ( kadence()->show_feature_above() ) {
 </article>
 <?php do_action( 'kadence_single_after_content' ); ?>
 <?php if ( is_singular( get_post_type() ) ) : ?>
-	<?php if ( kadence()->option( 'post_author_box' ) ) { get_template_part( 'template-parts/content/entry_author', get_post_type() ); } ?>
-	<?php if ( get_post_type_object( get_post_type() )->has_archive && kadence()->show_post_navigation() ) : ?>
-		<?php if ( kadence()->option( 'post_footer_area_boxed' ) ) { echo '<div class="post-navigation-wrap content-bg entry-content-wrap entry">'; } ?>
-		<?php the_post_navigation( apply_filters( 'kadence_post_navigation_args', array(
-			'prev_text' => '<div class="post-navigation-sub"><small>' . kadence()->get_icon( 'arrow-left-alt' ) . esc_html__( 'Previous', 'kadence' ) . '</small></div>%title',
-			'next_text' => '<div class="post-navigation-sub"><small>' . esc_html__( 'Next', 'kadence' ) . kadence()->get_icon( 'arrow-right-alt' ) . '</small></div>%title',
-		) ) ); ?>
-		<?php if ( kadence()->option( 'post_footer_area_boxed' ) ) { echo '</div>'; } ?>
+	<?php
+	// Post Navigation — bypass Kadence's hardcoded 'post' === $post_type in check_conditionals()
+	$cpt_types = array( 'forecast', 'indicator', 'ea' );
+	$pt = get_post_type();
+	if ( in_array( $pt, $cpt_types, true ) || ( kadence()->show_post_navigation() ) ) :
+	?>
+		<?php
+		$prev = get_previous_post();
+		$next = get_next_post();
+		if ( $prev || $next ) :
+		?>
+		<div class="entry-content-wrap content-bg" style="margin-top:1.5rem;padding:1.5rem;">
+			<?php the_post_navigation( apply_filters( 'kadence_post_navigation_args', array(
+				'prev_text' => '<div class="post-navigation-sub"><small>' . kadence()->get_icon( 'arrow-left-alt' ) . esc_html__( 'Previous', 'kadence' ) . '</small></div>%title',
+				'next_text' => '<div class="post-navigation-sub"><small>' . esc_html__( 'Next', 'kadence' ) . kadence()->get_icon( 'arrow-right-alt' ) . '</small></div>%title',
+			) ) ); ?>
+		</div>
+		<?php endif; ?>
 	<?php endif; ?>
-	<?php if ( kadence()->show_comments() ) { comments_template(); } ?>
+	<?php
+	// Comments
+	$cpt_types = array( 'forecast', 'indicator', 'ea' );
+	$pt = get_post_type();
+	if ( in_array( $pt, $cpt_types, true ) ) {
+		if ( post_type_supports( $pt, 'comments' ) && ( comments_open() || get_comments_number() ) ) {
+			comments_template();
+		}
+	} elseif ( kadence()->show_comments() ) {
+		comments_template();
+	}
+	?>
 <?php endif; ?>
