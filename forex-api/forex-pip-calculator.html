@@ -854,50 +854,72 @@ function resetCalc() {
 }
 
 /* ── Ticker ─────────────────────────────────────────────────── */
-const TICKS = [
-  {pair:'EUR/USD',px:'1.08524',ch:'+0.0012',up:true},
-  {pair:'GBP/USD',px:'1.26481',ch:'-0.0008',up:false},
-  {pair:'USD/JPY',px:'149.523',ch:'+0.420', up:true},
-  {pair:'AUD/USD',px:'0.65521',ch:'+0.0024',up:true},
-  {pair:'USD/CHF',px:'0.89812',ch:'-0.0003',up:false},
-  {pair:'USD/CAD',px:'1.35802',ch:'+0.0011',up:true},
-  {pair:'EUR/GBP',px:'0.85741',ch:'-0.0005',up:false},
-  {pair:'EUR/JPY',px:'162.241',ch:'+0.890', up:true},
-  {pair:'EUR/CHF',px:'0.97405',ch:'+0.0006',up:true},
-  {pair:'EUR/AUD',px:'1.65620',ch:'-0.0021',up:false},
-  {pair:'EUR/CAD',px:'1.47310',ch:'+0.0014',up:true},
-  {pair:'EUR/NZD',px:'1.77230',ch:'-0.0018',up:false},
-  {pair:'GBP/JPY',px:'189.042',ch:'+0.380', up:true},
-  {pair:'GBP/CHF',px:'1.13510',ch:'-0.0007',up:false},
-  {pair:'GBP/AUD',px:'1.93120',ch:'+0.0025',up:true},
-  {pair:'GBP/CAD',px:'1.71830',ch:'-0.0012',up:false},
-  {pair:'GBP/NZD',px:'2.06640',ch:'+0.0030',up:true},
-  {pair:'AUD/JPY',px:'98.002', ch:'+0.310', up:true},
-  {pair:'AUD/CHF',px:'0.58810',ch:'-0.0004',up:false},
-  {pair:'AUD/CAD',px:'0.89020',ch:'+0.0008',up:true},
-  {pair:'AUD/NZD',px:'1.07810',ch:'-0.0005',up:false},
-  {pair:'NZD/JPY',px:'91.602', ch:'+0.240', up:true},
-  {pair:'NZD/CHF',px:'0.55020',ch:'-0.0002',up:false},
-  {pair:'NZDCAD',px:'0.83110',ch:'+0.0009',up:true},
-  {pair:'NZD/USD',px:'0.61205',ch:'-0.0015',up:false},
-  {pair:'CHF/JPY',px:'166.502',ch:'+0.450', up:true},
-  {pair:'CAD/JPY',px:'110.104',ch:'-0.320', up:false},
-  {pair:'CAD/CHF',px:'0.66120',ch:'+0.0003',up:true},
-  {pair:'XAU/USD',px:'2345.40',ch:'+8.20',  up:true},
-  {pair:'XAG/USD',px:'29.502', ch:'+0.350', up:true},
-  {pair:'BTC/USD',px:'68,524', ch:'+1,240', up:true},
+/* ── Live Ticker (from forex_data.json) ──────────────────── */
+const TICKER_SYMS = [
+  'EURUSD','GBPUSD','USDJPY','AUDUSD','USDCHF','USDCAD',
+  'EURGBP','EURJPY','EURCHF','EURAUD','EURCAD','EURNZD',
+  'GBPJPY','GBPCHF','GBPAUD','GBPCAD','GBPNZD',
+  'AUDJPY','AUDCHF','AUDCAD','AUDNZD',
+  'NZDJPY','NZDCHF','NZDCAD','NZDUSD',
+  'CHFJPY','CADJPY','CADCHF','XAUUSD'
 ];
 
-(function buildTicker() {
+function fmtTickerSym(sym) {
+  if (sym === 'XAUUSD') return 'XAU/USD';
+  return sym.slice(0,3) + '/' + sym.slice(3);
+}
+
+function buildTickerTicks(items) {
   const el = document.getElementById('ticker');
-  const all = [...TICKS,...TICKS];
-  el.innerHTML = all.map(t =>
-    `<div class="tick">
-      <span class="tick-pair">${t.pair}</span>
-      <span class="tick-px">${t.px}</span>
-      <span class="${t.up?'up':'dn'}">${t.up?'▲':'▼'} ${t.ch}</span>
-    </div>`
-  ).join('');
+  if (!el || !items.length) return;
+  const all = items.concat(items);
+  el.innerHTML = all.map(function(t) {
+    return '<div class="tick">' +
+      '<span class="tick-pair">' + t.pair + '</span>' +
+      '<span class="tick-px">' + t.px + '</span>' +
+      '<span class="' + (t.up ? 'up' : 'dn') + '">' + (t.up ? '▲' : '▼') + ' ' + t.ch + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function buildTickerFromData(data) {
+  var items = [];
+  for (var i = 0; i < TICKER_SYMS.length; i++) {
+    var sym = TICKER_SYMS[i];
+    var d = data[sym];
+    if (!d || typeof d.bid !== 'number') continue;
+    var bid = d.bid;
+    var digits = d.digits || 5;
+    var px = bid.toFixed(digits);
+    var ch = '+0.00', up = true;
+    if (d.tf && d.tf.M5 && d.tf.M5.c && d.tf.M5.c.length >= 2) {
+      var closes = d.tf.M5.c;
+      var prev = closes[closes.length - 1];
+      var diff = bid - prev;
+      ch = (diff >= 0 ? '+' : '') + diff.toFixed(digits);
+      up = diff >= 0;
+    }
+    items.push({ pair: fmtTickerSym(sym), px: px, ch: ch, up: up });
+  }
+  if (items.length === 0) {
+    items.push(
+      {pair:'EUR/USD',px:'1.0850',ch:'+0.0012',up:true},
+      {pair:'GBP/USD',px:'1.2650',ch:'-0.0008',up:false},
+      {pair:'USD/JPY',px:'149.50',ch:'+0.42',up:true}
+    );
+  }
+  buildTickerTicks(items);
+}
+
+(async function loadTicker() {
+  try {
+    var resp = await fetch('forex_data.json?t=' + Date.now());
+    var data = await resp.json();
+    buildTickerFromData(data);
+  } catch(e) {
+    console.warn('Ticker live fetch failed, using fallback', e);
+    buildTickerFromData({});
+  }
 })();
 
 /* ── Init ───────────────────────────────────────────────────── */
