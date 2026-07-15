@@ -66,7 +66,7 @@
  .refresh-btn:disabled{opacity:.5;cursor:not-allowed;}
 
  .ticker-wrap{overflow:hidden;margin-bottom:22px;-webkit-mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);}
- .ticker-strip{display:inline-flex;gap:8px;animation:tickMove 90s linear infinite;white-space:nowrap;}
+ .ticker-strip{display:inline-flex;gap:8px;animation:tickMove 180s linear infinite;white-space:nowrap;}
  @keyframes tickMove{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
  .tick{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--bg-section);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
  .tick-pair{color:var(--text-secondary);}
@@ -446,7 +446,7 @@ async function fetchLiveData() {
  // Snapshot previous mid-prices before overwriting
  if (liveData) {
  Object.keys(PD).forEach(function(sym) {
- var p = liveData[sym];
+ var p = liveData.pairs?.[sym];
  if (p && typeof p.bid === 'number' && typeof p.ask === 'number') {
  prevPrices[sym] = (p.bid + p.ask) / 2;
  }
@@ -478,8 +478,8 @@ function setLiveBadge() {
 /* Returns { bid, ask, mid } or null if this pair isn't in the live feed */
 function getLiveQuote(sym) {
  if (!liveOk || !liveData) return null;
- /* FIX: data is flat (not nested under .pairs) */
- var p = liveData[sym];
+ /* LIVE DATA structure: { pairs: { EURUSD: {bid, ask, ...}, ... } } */
+ var p = liveData.pairs?.[sym];
  if (!p || typeof p.bid !== 'number' || typeof p.ask !== 'number') return null;
  return { bid: p.bid, ask: p.ask, mid: (p.bid + p.ask) / 2, spread: p.spread };
 }
