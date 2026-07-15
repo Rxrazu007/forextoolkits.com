@@ -66,7 +66,7 @@
  .refresh-btn:disabled{opacity:.5;cursor:not-allowed;}
 
  .ticker-wrap{overflow:hidden;margin-bottom:22px;-webkit-mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);}
- .ticker-strip{display:flex;gap:8px;animation:tickMove 32s linear infinite;white-space:nowrap;}
+ .ticker-strip{display:inline-flex;gap:8px;animation:tickMove 32s linear infinite;white-space:nowrap;}
  @keyframes tickMove{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
  .tick{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--bg-section);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
  .tick-pair{color:var(--text-secondary);}
@@ -380,7 +380,7 @@
  ══════════════════════════════════════════════ */
 /* Relative URL — works in both iframe and direct access */
 var DATA_URL = 'forex_data.json';
-var REFRESH_MS = 5000;
+var REFRESH_MS = 30000;
 
 // 28 majors (must match your EA feed's pair keys) + 3 manual-only instruments
 const PD = {
@@ -412,8 +412,8 @@ const PD = {
  CHFJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"CHF",fallback:166.50,live:true},
  CADJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"CAD",fallback:110.10,live:true},
  CADCHF:{pip:0.0001,dec:4,type:"CAD Cross",quote:"CHF",base:"CAD",fallback:0.6610,live:true},
- XAUUSD:{pip:0.01, dec:2,type:"Commodity",quote:"USD",base:"XAU",fallback:2345.0,live:false},
- XAGUSD:{pip:0.001, dec:3,type:"Commodity",quote:"USD",base:"XAG",fallback:29.50, live:false},
+ XAUUSD:{pip:0.01, dec:2,type:"Commodity",quote:"USD",base:"XAU",fallback:2345.0,live:true},
+ XAGUSD:{pip:0.001, dec:3,type:"Commodity",quote:"USD",base:"XAG",fallback:29.50, live:true},
  BTCUSD:{pip:1, dec:0,type:"Crypto", quote:"USD",base:"BTC",fallback:68500, live:false},
 };
 
