@@ -3,986 +3,722 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forex Pip Calculator</title>
+<title>Forex Pip Calculator — Live</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  /* ── Root variables ───────────────────────────────── */
-  :root {
-    --bg-primary:   #07090f;
-    --bg-card:      #0c1018;
-    --bg-section:   #101520;
-    --bg-input:     #131b26;
-    --bg-hover:     #1a2535;
-    --border:       #1e2d40;
-    --border-active:#00d4ff55;
-    --accent-cyan:  #00d4ff;
-    --accent-green: #00ff88;
-    --accent-red:   #ff4466;
-    --accent-gold:  #ffd060;
-    --text-primary: #e8f4ff;
-    --text-secondary:#8899aa;
-    --text-muted:   #445566;
-    --glow-cyan:    0 0 22px #00d4ff44;
-    --glow-green:   0 0 22px #00ff8844;
-    --shadow-card:  0 12px 60px #00000099, 0 2px 0 #00d4ff18;
-    --radius-card:  20px;
-    --radius-input: 10px;
-  }
+ :root {
+ --bg-primary: #07090f;
+ --bg-card: #0c1018;
+ --bg-section: #101520;
+ --bg-input: #131b26;
+ --bg-hover: #1a2535;
+ --border: #1e2d40;
+ --accent-cyan: #00d4ff;
+ --accent-green: #00ff88;
+ --accent-red: #ff4466;
+ --accent-gold: #ffd060;
+ --text-primary: #e8f4ff;
+ --text-secondary:#8899aa;
+ --text-muted: #445566;
+ --glow-cyan: 0 0 22px #00d4ff44;
+ --glow-green: 0 0 22px #00ff8844;
+ }
+ *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+ .pip-calc-shell {
+ font-family:'IBM Plex Sans',sans-serif;
+ background:var(--bg-primary); border-radius:24px; padding:6px;
+ box-shadow:0 20px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(0,212,255,.12);
+ max-width:100%; margin:0 auto; color:var(--text-primary);
+ overflow:hidden; position:relative;
+ }
+ .pip-calc-shell::before {
+ content:''; position:absolute; inset:0;
+ background:
+ radial-gradient(ellipse at 20% 10%, rgba(0,212,255,.06) 0%, transparent 55%),
+ radial-gradient(ellipse at 80% 85%, rgba(0,255,136,.04) 0%, transparent 55%);
+ pointer-events:none; z-index:0; animation:aurora 10s ease-in-out infinite alternate;
+ }
+ @keyframes aurora{from{opacity:.6;}to{opacity:1;}}
+ .pip-calc-shell::after {
+ content:''; position:absolute; inset:0;
+ background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
+ background-size:44px 44px; pointer-events:none; z-index:0;
+ }
+ .calc-inner{position:relative;z-index:1;padding:24px 24px 28px;}
 
-  /* ── Outer shell (white-site friendly wrapper) ─────── */
-  .pip-calc-shell {
-    font-family: 'IBM Plex Sans', sans-serif;
-    background: var(--bg-primary);
-    border-radius: 24px;
-    padding: 6px;
-    box-shadow: 0 20px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.12);
-    max-width: 100%;
-    margin: 0 auto;
-    color: var(--text-primary);
-    overflow: hidden;
-    position: relative;
-  }
+ .calc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+ .calc-brand{display:flex;align-items:center;gap:14px;}
+ .calc-logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#00d4ff22,#00ff8822);border:1px solid rgba(0,212,255,.3);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:var(--glow-cyan);}
+ .calc-title{font-family:'Orbitron',monospace;font-size:clamp(16px,3.5vw,22px);font-weight:900;letter-spacing:1px;background:linear-gradient(135deg,#fff 0%,var(--accent-cyan) 60%,var(--accent-green) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+ .calc-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
 
-  /* subtle animated aurora behind everything */
-  .pip-calc-shell::before {
-    content:'';
-    position:absolute; inset:0;
-    background:
-      radial-gradient(ellipse at 20% 10%, rgba(0,212,255,0.06) 0%, transparent 55%),
-      radial-gradient(ellipse at 80% 85%, rgba(0,255,136,0.04) 0%, transparent 55%);
-    pointer-events:none; z-index:0;
-    animation: aurora 10s ease-in-out infinite alternate;
-  }
-  @keyframes aurora { from{opacity:.6;} to{opacity:1;} }
+ .live-badge{display:flex;align-items:center;gap:7px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:100px;padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent-green);letter-spacing:1.5px;text-transform:uppercase;transition:all .3s;}
+ .live-badge.offline{background:rgba(255,68,102,.08);border-color:rgba(255,68,102,.25);color:var(--accent-red);}
+ .live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-green);box-shadow:var(--glow-green);animation:liveblink 1.6s ease-in-out infinite;}
+ .live-badge.offline .live-dot{background:var(--accent-red);box-shadow:0 0 22px #ff446644;}
+ @keyframes liveblink{0%,100%{opacity:1;}50%{opacity:.25;}}
 
-  /* grid overlay */
-  .pip-calc-shell::after {
-    content:'';
-    position:absolute; inset:0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
-    background-size:44px 44px;
-    pointer-events:none; z-index:0;
-  }
+ .updated-row{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:14px;flex-wrap:wrap;}
+ .updated-row .sep{opacity:.4;}
+ .refresh-btn{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);border-radius:20px;padding:3px 11px;color:var(--accent-cyan);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.5px;transition:all .2s;}
+ .refresh-btn:hover{background:rgba(0,212,255,.15);box-shadow:0 0 10px rgba(0,212,255,.2);}
+ .refresh-btn:disabled{opacity:.5;cursor:not-allowed;}
 
-  .calc-inner { position:relative; z-index:1; padding: 24px 24px 28px; }
+ .ticker-wrap{overflow:hidden;margin-bottom:22px;-webkit-mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);}
+ .ticker-strip{display:flex;gap:8px;animation:tickMove 32s linear infinite;white-space:nowrap;}
+ @keyframes tickMove{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+ .tick{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--bg-section);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+ .tick-pair{color:var(--text-secondary);}
+ .tick-px{color:var(--text-primary);font-weight:500;}
+ .up{color:var(--accent-green);} .dn{color:var(--accent-red);}
 
-  /* ── Header ────────────────────────────────────────── */
-  .calc-header {
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:20px; flex-wrap:wrap; gap:12px;
-  }
-  .calc-brand { display:flex; align-items:center; gap:14px; }
-  .calc-logo {
-    width:44px; height:44px; border-radius:12px;
-    background: linear-gradient(135deg, #00d4ff22, #00ff8822);
-    border: 1px solid rgba(0,212,255,0.3);
-    display:flex; align-items:center; justify-content:center;
-    font-size:20px; box-shadow: var(--glow-cyan);
-  }
-  .calc-title {
-    font-family:'Orbitron', monospace;
-    font-size:clamp(16px,3.5vw,22px);
-    font-weight:900; letter-spacing:1px;
-    background: linear-gradient(135deg, #fff 0%, var(--accent-cyan) 60%, var(--accent-green) 100%);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-  }
-  .calc-sub {
-    font-family:'IBM Plex Mono', monospace;
-    font-size:10px; color:var(--text-muted);
-    letter-spacing:1.5px; text-transform:uppercase; margin-top:2px;
-  }
+ .sec-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent-cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+ .sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
 
-  /* live dot */
-  .live-badge {
-    display:flex; align-items:center; gap:7px;
-    background:rgba(0,255,136,0.08);
-    border:1px solid rgba(0,255,136,0.2);
-    border-radius:100px; padding:5px 12px;
-    font-family:'IBM Plex Mono',monospace; font-size:10px;
-    color:var(--accent-green); letter-spacing:1.5px; text-transform:uppercase;
-  }
-  .live-dot {
-    width:7px; height:7px; border-radius:50%;
-    background:var(--accent-green); box-shadow:var(--glow-green);
-    animation: liveblink 1.6s ease-in-out infinite;
-  }
-  @keyframes liveblink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+ .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+ .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+ @media(max-width:640px){.g3{grid-template-columns:1fr 1fr;}}
+ @media(max-width:480px){.g2{grid-template-columns:1fr;}.g3{grid-template-columns:1fr;}}
 
-  /* ── Ticker ────────────────────────────────────────── */
-  .ticker-wrap {
-    overflow:hidden; margin-bottom:22px;
-    -webkit-mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
-    mask:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
-  }
-  .ticker-strip {
-    display:flex; gap:8px;
-    animation: tickMove 28s linear infinite;
-    white-space:nowrap;
-  }
-  @keyframes tickMove { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
-  .tick {
-    flex-shrink:0; display:inline-flex; align-items:center; gap:8px;
-    background:var(--bg-section); border:1px solid var(--border);
-    border-radius:8px; padding:6px 14px;
-    font-family:'IBM Plex Mono',monospace; font-size:11px;
-  }
-  .tick-pair { color:var(--text-secondary); }
-  .tick-px   { color:var(--text-primary); font-weight:500; }
-  .up  { color:var(--accent-green); }
-  .dn  { color:var(--accent-red); }
+ .field{display:flex;flex-direction:column;gap:6px;}
+ .field label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
+ .inp-wrap{position:relative;display:flex;align-items:center;}
+ .inp-ico{position:absolute;left:11px;font-size:13px;color:var(--text-muted);pointer-events:none;transition:color .2s;font-family:'IBM Plex Mono',monospace;}
+ .inp-unit{position:absolute;right:11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);pointer-events:none;letter-spacing:.5px;}
 
-  /* ── Section label ─────────────────────────────────── */
-  .sec-label {
-    font-family:'IBM Plex Mono',monospace; font-size:10px;
-    color:var(--accent-cyan); letter-spacing:2px; text-transform:uppercase;
-    margin-bottom:14px; display:flex; align-items:center; gap:10px;
-  }
-  .sec-label::after {
-    content:''; flex:1; height:1px;
-    background:linear-gradient(90deg, var(--border), transparent);
-  }
+ input,select{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:11px 40px 11px 34px;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;-webkit-appearance:none;appearance:none;}
+ select{padding-left:12px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%2300d4ff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;}
+ select option{background:#0c1018;color:#e8f4ff;}
+ input:focus,select:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1),var(--glow-cyan);background:var(--bg-hover);}
+ .inp-wrap:focus-within .inp-ico{color:var(--accent-cyan);}
+ input.live-filled{border-color:rgba(0,255,136,.4);box-shadow:0 0 0 3px rgba(0,255,136,.08);}
+ .live-tag-inline{font-size:9px;color:var(--accent-green);letter-spacing:.5px;}
+ .live-tag-inline.manual{color:var(--text-muted);}
 
-  /* ── Grid helpers ──────────────────────────────────── */
-  .g2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-  .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-  @media(max-width:640px){ .g3{grid-template-columns:1fr 1fr;} .g4{grid-template-columns:1fr 1fr;} }
-  @media(max-width:480px){ .g2{grid-template-columns:1fr;} .g3{grid-template-columns:1fr;} }
+ .pair-tabs{display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+ .pair-tab{flex:1;padding:10px 8px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;border-right:1px solid var(--border);transition:all .2s;user-select:none;}
+ .pair-tab:last-child{border-right:none;}
+ .pair-tab.active{background:rgba(0,212,255,.1);color:var(--accent-cyan);}
 
-  /* ── Form fields ───────────────────────────────────── */
-  .field { display:flex; flex-direction:column; gap:6px; }
-  .field label {
-    font-family:'IBM Plex Mono',monospace; font-size:10px;
-    color:var(--text-secondary); letter-spacing:1px; text-transform:uppercase;
-  }
-  .inp-wrap { position:relative; display:flex; align-items:center; }
-  .inp-ico {
-    position:absolute; left:11px; font-size:13px;
-    color:var(--text-muted); pointer-events:none; transition:color .2s;
-    font-family:'IBM Plex Mono',monospace;
-  }
-  .inp-unit {
-    position:absolute; right:11px;
-    font-family:'IBM Plex Mono',monospace; font-size:10px;
-    color:var(--text-muted); pointer-events:none; letter-spacing:.5px;
-  }
+ .pip-toggle{display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;overflow:hidden;height:42px;}
+ .pip-toggle label{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-right:1px solid var(--border);transition:all .2s;}
+ .pip-toggle label:last-child{border-right:none;}
+ .pip-toggle input[type="radio"]{display:none;}
+ .pip-toggle input[type="radio"]:checked + span{background:rgba(0,212,255,.12);color:var(--accent-cyan);}
+ .pip-toggle label span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;transition:all .2s;}
 
-  input, select {
-    width:100%;
-    background:var(--bg-input); border:1px solid var(--border);
-    border-radius:var(--radius-input);
-    color:var(--text-primary);
-    font-family:'IBM Plex Mono',monospace; font-size:13px;
-    padding:11px 40px 11px 34px;
-    outline:none; transition:border-color .2s, box-shadow .2s, background .2s;
-    -webkit-appearance:none; appearance:none;
-  }
-  select {
-    padding-left:12px; cursor:pointer;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%2300d4ff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 11px center;
-  }
-  select option { background:#0c1018; color:#e8f4ff; }
-  input:focus, select:focus {
-    border-color:var(--accent-cyan);
-    box-shadow:0 0 0 3px rgba(0,212,255,.1), var(--glow-cyan);
-    background:var(--bg-hover);
-  }
-  .inp-wrap:focus-within .inp-ico { color:var(--accent-cyan); }
+ .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:22px 0;}
 
-  /* ── Pair mode tabs ────────────────────────────────── */
-  .pair-tabs {
-    display:flex; background:var(--bg-input);
-    border:1px solid var(--border); border-radius:10px;
-    overflow:hidden; margin-bottom:14px;
-  }
-  .pair-tab {
-    flex:1; padding:10px 8px; text-align:center; cursor:pointer;
-    font-family:'IBM Plex Mono',monospace; font-size:11px;
-    color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;
-    border-right:1px solid var(--border); transition:all .2s; user-select:none;
-  }
-  .pair-tab:last-child { border-right:none; }
-  .pair-tab.active {
-    background:rgba(0,212,255,.1); color:var(--accent-cyan);
-  }
+ .btn-calc{width:100%;background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,255,136,.08));border:1px solid var(--accent-cyan);border-radius:12px;color:var(--accent-cyan);font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:2px;padding:15px;cursor:pointer;transition:all .3s;text-transform:uppercase;position:relative;overflow:hidden;margin-top:18px;}
+ .btn-calc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-green));opacity:0;transition:opacity .3s;}
+ .btn-calc:hover{box-shadow:var(--glow-cyan),0 4px 24px rgba(0,212,255,.2);transform:translateY(-1px);}
+ .btn-calc:hover::before{opacity:.12;}
+ .btn-calc:active{transform:translateY(0);}
+ .btn-calc span{position:relative;z-index:1;}
 
-  /* ── Pip type toggle ───────────────────────────────── */
-  .pip-toggle { display:flex; background:var(--bg-input); border:1px solid var(--border); border-radius:10px; overflow:hidden; height:42px; }
-  .pip-toggle label { flex:1; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; border-right:1px solid var(--border); transition:all .2s; }
-  .pip-toggle label:last-child { border-right:none; }
-  .pip-toggle input[type="radio"] { display:none; }
-  .pip-toggle input[type="radio"]:checked + span { background:rgba(0,212,255,.12); color:var(--accent-cyan); }
-  .pip-toggle label span { display:flex; align-items:center; justify-content:center; width:100%; height:100%; transition:all .2s; }
+ .tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;}
+ .tag-c{background:rgba(0,212,255,.1);color:var(--accent-cyan);border:1px solid rgba(0,212,255,.2);}
+ .tag-g{background:rgba(0,255,136,.1);color:var(--accent-green);border:1px solid rgba(0,255,136,.2);}
+ .tag-gold{background:rgba(255,208,96,.1);color:var(--accent-gold);border:1px solid rgba(255,208,96,.2);}
+ .tag-red{background:rgba(255,68,102,.1);color:var(--accent-red);border:1px solid rgba(255,68,102,.2);}
+ .pair-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
 
-  /* ── Divider ───────────────────────────────────────── */
-  .divider { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:22px 0; }
+ .err{display:none;background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.3);border-radius:10px;padding:11px 15px;color:var(--accent-red);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:14px;letter-spacing:.5px;line-height:1.5;}
 
-  /* ── Calculate button ──────────────────────────────── */
-  .btn-calc {
-    width:100%;
-    background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,255,136,.08));
-    border:1px solid var(--accent-cyan); border-radius:12px;
-    color:var(--accent-cyan);
-    font-family:'Orbitron',monospace; font-size:12px; font-weight:700;
-    letter-spacing:2px; padding:15px; cursor:pointer;
-    transition:all .3s; text-transform:uppercase; position:relative; overflow:hidden;
-    margin-top:18px;
-  }
-  .btn-calc::before {
-    content:''; position:absolute; inset:0;
-    background:linear-gradient(135deg,var(--accent-cyan),var(--accent-green));
-    opacity:0; transition:opacity .3s;
-  }
-  .btn-calc:hover { box-shadow:var(--glow-cyan),0 4px 24px rgba(0,212,255,.2); transform:translateY(-1px); }
-  .btn-calc:hover::before { opacity:.12; }
-  .btn-calc:active { transform:translateY(0); }
-  .btn-calc span { position:relative; z-index:1; }
+ .results{margin-top:22px;}
+ .res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
+ @media(max-width:420px){.res-grid{grid-template-columns:1fr;}}
+ .res-card{background:var(--bg-input);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:all .3s;}
+ .res-card.big{grid-column:1/-1;background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(0,255,136,.05));border-color:rgba(0,212,255,.25);box-shadow:0 4px 30px rgba(0,212,255,.1);}
+ .res-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;}
+ .res-val{font-family:'Orbitron',monospace;font-size:clamp(20px,4.5vw,30px);font-weight:700;color:var(--accent-cyan);line-height:1;animation:popIn .4s ease both;}
+ .res-card.big .res-val{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:clamp(24px,5vw,36px);}
+ @keyframes popIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+ .res-val.pos{color:var(--accent-green);}
+ .res-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-secondary);margin-top:5px;}
 
-  /* ── Tag badges ────────────────────────────────────── */
-  .tag { display:inline-block; padding:2px 9px; border-radius:5px; font-size:10px; font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
-  .tag-c { background:rgba(0,212,255,.1); color:var(--accent-cyan); border:1px solid rgba(0,212,255,.2); }
-  .tag-g { background:rgba(0,255,136,.1); color:var(--accent-green); border:1px solid rgba(0,255,136,.2); }
-  .tag-gold { background:rgba(255,208,96,.1); color:var(--accent-gold); border:1px solid rgba(255,208,96,.2); }
-  .pair-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+ .bk{margin-top:18px;background:var(--bg-input);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+ .bk-hdr{padding:11px 16px;background:rgba(0,212,255,.05);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent-cyan);letter-spacing:1.5px;text-transform:uppercase;}
+ .bk-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .2s;}
+ .bk-row:last-child{border-bottom:none;}
+ .bk-row:hover{background:rgba(255,255,255,.02);}
+ .bk-k{color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;font-size:11px;}
+ .bk-v{font-family:'IBM Plex Mono',monospace;font-weight:500;color:var(--text-primary);font-size:12px;}
 
-  /* ── Error ─────────────────────────────────────────── */
-  .err {
-    display:none; background:rgba(255,68,102,.08);
-    border:1px solid rgba(255,68,102,.3); border-radius:10px;
-    padding:11px 15px; color:var(--accent-red);
-    font-family:'IBM Plex Mono',monospace; font-size:11px;
-    margin-top:14px; letter-spacing:.5px;
-  }
+ .reset-btn{display:block;text-align:center;margin-top:14px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;transition:color .2s;}
+ .reset-btn:hover{color:var(--accent-cyan);}
 
-  /* ── Results ───────────────────────────────────────── */
-  .results { margin-top:22px; }
-  .res-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
-  @media(max-width:420px){ .res-grid{grid-template-columns:1fr;} }
+ .info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;}
+ @media(max-width:600px){.info-row{grid-template-columns:1fr 1fr;}}
+ @media(max-width:380px){.info-row{grid-template-columns:1fr;}}
+ .inf-card{background:var(--bg-section);border:1px solid var(--border);border-radius:12px;padding:14px;}
+ .inf-ico{font-size:18px;margin-bottom:7px;}
+ .inf-ttl{font-family:'Orbitron',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+ .inf-txt{font-size:11px;color:var(--text-muted);line-height:1.55;}
 
-  .res-card {
-    background:var(--bg-input); border:1px solid var(--border);
-    border-radius:14px; padding:16px; position:relative; overflow:hidden;
-    transition:all .3s;
-  }
-  .res-card.big {
-    grid-column:1/-1;
-    background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(0,255,136,.05));
-    border-color:rgba(0,212,255,.25);
-    box-shadow:0 4px 30px rgba(0,212,255,.1);
-  }
-  .res-card::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:1px;
-    background:linear-gradient(90deg,transparent,var(--border),transparent);
-  }
-  .res-card.big::before {
-    background:linear-gradient(90deg,transparent,var(--accent-cyan),transparent); opacity:.5;
-  }
-  .res-lbl {
-    font-family:'IBM Plex Mono',monospace; font-size:9px;
-    color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px;
-  }
-  .res-val {
-    font-family:'Orbitron',monospace; font-size:clamp(20px,4.5vw,30px);
-    font-weight:700; color:var(--accent-cyan); line-height:1;
-    animation: popIn .4s ease both;
-  }
-  .res-card.big .res-val {
-    background:linear-gradient(135deg,var(--accent-cyan),var(--accent-green));
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-    font-size:clamp(24px,5vw,36px);
-  }
-  @keyframes popIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
-  .res-val.pos { color:var(--accent-green); }
-  .res-val.neg { color:var(--accent-red); }
-  .res-sub { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-secondary); margin-top:5px; }
-
-  /* ── Breakdown table ───────────────────────────────── */
-  .bk { margin-top:18px; background:var(--bg-input); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-  .bk-hdr { padding:11px 16px; background:rgba(0,212,255,.05); border-bottom:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--accent-cyan); letter-spacing:1.5px; text-transform:uppercase; }
-  .bk-row { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); transition:background .2s; }
-  .bk-row:last-child { border-bottom:none; }
-  .bk-row:hover { background:rgba(255,255,255,.02); }
-  .bk-k { color:var(--text-secondary); font-family:'IBM Plex Mono',monospace; font-size:11px; }
-  .bk-v { font-family:'IBM Plex Mono',monospace; font-weight:500; color:var(--text-primary); font-size:12px; }
-
-  /* ── Reset ─────────────────────────────────────────── */
-  .reset-btn { display:block; text-align:center; margin-top:14px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; letter-spacing:1px; transition:color .2s; }
-  .reset-btn:hover { color:var(--accent-cyan); }
-
-  /* ── Info cards ────────────────────────────────────── */
-  .info-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
-  @media(max-width:600px){ .info-row{grid-template-columns:1fr 1fr;} }
-  @media(max-width:380px){ .info-row{grid-template-columns:1fr;} }
-  .inf-card { background:var(--bg-section); border:1px solid var(--border); border-radius:12px; padding:14px; }
-  .inf-ico { font-size:18px; margin-bottom:7px; }
-  .inf-ttl { font-family:'Orbitron',monospace; font-size:10px; color:var(--text-secondary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
-  .inf-txt { font-size:11px; color:var(--text-muted); line-height:1.55; }
-
-  /* ── Footer ────────────────────────────────────────── */
-  .calc-foot { text-align:center; margin-top:20px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; }
-
-  /* ── Custom pair section ───────────────────────────── */
-  .custom-note { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.6; background:rgba(255,208,96,.05); border:1px solid rgba(255,208,96,.15); border-radius:8px; padding:10px 13px; }
-
-  /* ── Tooltip ───────────────────────────────────────── */
-  [data-tip] { position:relative; cursor:help; }
-  [data-tip]::after { content:attr(data-tip); position:absolute; bottom:130%; left:50%; transform:translateX(-50%); background:#1a2535; border:1px solid var(--border); color:var(--text-secondary); font-size:10px; font-family:'IBM Plex Sans',sans-serif; padding:6px 10px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .2s; z-index:100; }
-  [data-tip]:hover::after { opacity:1; }
-
-  @media(max-width:480px){ .calc-inner{padding:16px;} }
+ .calc-foot{text-align:center;margin-top:20px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;}
+ .custom-note{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.6;background:rgba(255,208,96,.05);border:1px solid rgba(255,208,96,.15);border-radius:8px;padding:10px 13px;}
+ [data-tip]{position:relative;cursor:help;}
+ [data-tip]::after{content:attr(data-tip);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#1a2535;border:1px solid var(--border);color:var(--text-secondary);font-size:10px;font-family:'IBM Plex Sans',sans-serif;padding:6px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100;}
+ [data-tip]:hover::after{opacity:1;}
+ @media(max-width:480px){.calc-inner{padding:16px;}}
 </style>
 </head>
 <body style="background:transparent; padding:0; font-family:sans-serif;">
-<!-- 
-  NOTE FOR WEBSITE INTEGRATION:
-  Remove the <body> style above and the outer <div class="page-demo"> wrapper.
-  Just keep <div class="pip-calc-shell"> ... </div> and embed where needed.
--->
+<!-- INTEGRATION NOTE: keep only <div class="pip-calc-shell">...</div> when embedding -->
 
 <div class="pip-calc-shell">
 <div class="calc-inner">
 
-  <!-- Header -->
-  <div class="calc-header">
-    <div class="calc-brand">
-      <div class="calc-logo">⚡</div>
-      <div>
-        <div class="calc-title">Pip Calculator</div>
-        <div class="calc-sub">Forex Precision Tool</div>
-      </div>
-    </div>
-    <div class="live-badge"><div class="live-dot"></div>Live</div>
-  </div>
+ <div class="calc-header">
+ <div class="calc-brand">
+ <div class="calc-logo">⚡</div>
+ <div>
+ <div class="calc-title">Pip Calculator</div>
+ <div class="calc-sub">Live Rate · Forex Precision Tool</div>
+ </div>
+ </div>
+ <div class="live-badge" id="liveBadge"><div class="live-dot"></div><span id="liveBadgeText">Connecting...</span></div>
+ </div>
 
-  <!-- Ticker -->
-  <div class="ticker-wrap">
-    <div class="ticker-strip" id="ticker"></div>
-  </div>
+ <div class="updated-row">
+ <span id="lastUpdateTxt">Last update: —</span>
+ <span class="sep">|</span>
+ <span id="nextUpdateTxt">Next update: —</span>
+ <span class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">⟳ Refresh Now</span>
+ </div>
 
-  <!-- PAIR MODE TABS -->
-  <div class="pair-tabs">
-    <div class="pair-tab active" id="tab-major" onclick="switchTab('major')">📊 28 Major Pairs</div>
-    <div class="pair-tab" id="tab-custom" onclick="switchTab('custom')">✏️ Custom Pair</div>
-  </div>
+ <div class="err" id="errMsg"></div>
 
-  <!-- ── MAJOR PAIRS SECTION ── -->
-  <div id="sec-major">
-    <div class="sec-label">01 — Select Pair</div>
-    <div class="g2" style="margin-bottom:12px;">
-      <div class="field">
-        <label data-tip="Choose from all 28 major currency pairs">Currency Pair</label>
-        <select id="pair" onchange="updatePairInfo()">
-          <optgroup label="── USD Majors ──">
-            <option value="EURUSD">EUR/USD</option>
-            <option value="GBPUSD">GBP/USD</option>
-            <option value="USDJPY">USD/JPY</option>
-            <option value="USDCHF">USD/CHF</option>
-            <option value="AUDUSD">AUD/USD</option>
-            <option value="USDCAD">USD/CAD</option>
-            <option value="NZDUSD">NZD/USD</option>
-          </optgroup>
-          <optgroup label="── EUR Crosses ──">
-            <option value="EURGBP">EUR/GBP</option>
-            <option value="EURJPY">EUR/JPY</option>
-            <option value="EURCHF">EUR/CHF</option>
-            <option value="EURAUD">EUR/AUD</option>
-            <option value="EURCAD">EUR/CAD</option>
-            <option value="EURNZD">EUR/NZD</option>
-          </optgroup>
-          <optgroup label="── GBP Crosses ──">
-            <option value="GBPJPY">GBP/JPY</option>
-            <option value="GBPCHF">GBP/CHF</option>
-            <option value="GBPAUD">GBP/AUD</option>
-            <option value="GBPCAD">GBP/CAD</option>
-            <option value="GBPNZD">GBP/NZD</option>
-          </optgroup>
-          <optgroup label="── AUD/NZD Crosses ──">
-            <option value="AUDJPY">AUD/JPY</option>
-            <option value="AUDCHF">AUD/CHF</option>
-            <option value="AUDCAD">AUD/CAD</option>
-            <option value="AUDNZD">AUD/NZD</option>
-            <option value="NZDJPY">NZD/JPY</option>
-            <option value="NZDCHF">NZD/CHF</option>
-            <option value="NZDCAD">NZD/CAD</option>
-          </optgroup>
-          <optgroup label="── Other Crosses ──">
-            <option value="CHFJPY">CHF/JPY</option>
-            <option value="CADJPY">CAD/JPY</option>
-            <option value="CADCHF">CAD/CHF</option>
-          </optgroup>
-          <optgroup label="── Commodities / Crypto ──">
-            <option value="XAUUSD">XAU/USD (Gold)</option>
-            <option value="XAGUSD">XAG/USD (Silver)</option>
-            <option value="BTCUSD">BTC/USD</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field">
-        <label data-tip="Your trading account base currency">Account Currency</label>
-        <select id="accountCurrency">
-          <option value="USD">USD — US Dollar</option>
-          <option value="EUR">EUR — Euro</option>
-          <option value="GBP">GBP — British Pound</option>
-          <option value="JPY">JPY — Japanese Yen</option>
-          <option value="AUD">AUD — Australian Dollar</option>
-          <option value="CAD">CAD — Canadian Dollar</option>
-          <option value="CHF">CHF — Swiss Franc</option>
-          <option value="NZD">NZD — New Zealand Dollar</option>
-          <option value="BDT">BDT — Bangladeshi Taka</option>
-        </select>
-      </div>
-    </div>
-    <div class="pair-tags" id="pairTags">
-      <span class="tag tag-c" id="pairType">Standard Pair</span>
-      <span class="tag tag-g" id="pipSizeTag">Pip: 0.0001</span>
-      <span class="tag tag-c" id="quoteTag">Quote: USD</span>
-    </div>
-  </div>
+ <div class="ticker-wrap"><div class="ticker-strip" id="ticker"></div></div>
 
-  <!-- ── CUSTOM PAIR SECTION ── -->
-  <div id="sec-custom" style="display:none;">
-    <div class="sec-label">01 — Custom Pair Setup</div>
-    <div class="custom-note">
-      ⚙️ Enter any exotic pair, index, commodity, or crypto manually. Specify the pip size and quote currency for correct calculation.
-    </div>
-    <div class="g3" style="margin-bottom:12px;">
-      <div class="field">
-        <label>Base Currency / Symbol</label>
-        <div class="inp-wrap">
-          <span class="inp-ico">◈</span>
-          <input type="text" id="customBase" placeholder="e.g. EUR, XAU, US30" maxlength="6" style="text-transform:uppercase;">
-        </div>
-      </div>
-      <div class="field">
-        <label>Quote Currency</label>
-        <div class="inp-wrap">
-          <span class="inp-ico">◈</span>
-          <input type="text" id="customQuote" placeholder="e.g. USD, JPY" maxlength="6" style="text-transform:uppercase;">
-        </div>
-      </div>
-      <div class="field">
-        <label data-tip="Size of 1 pip for this instrument">Pip Size</label>
-        <select id="customPipSize">
-          <option value="0.0001">0.0001 (Standard 4d)</option>
-          <option value="0.01">0.01 (JPY / 2d)</option>
-          <option value="0.001">0.001 (3 decimal)</option>
-          <option value="0.1">0.1 (Index / 1d)</option>
-          <option value="1">1 (Crypto / 0d)</option>
-          <option value="0.00001">0.00001 (5 decimal)</option>
-        </select>
-      </div>
-    </div>
-    <div class="g2" style="margin-bottom:12px;">
-      <div class="field">
-        <label>Account Currency</label>
-        <select id="customAcct">
-          <option value="USD">USD — US Dollar</option>
-          <option value="EUR">EUR — Euro</option>
-          <option value="GBP">GBP — British Pound</option>
-          <option value="JPY">JPY — Japanese Yen</option>
-          <option value="AUD">AUD — Australian Dollar</option>
-          <option value="CAD">CAD — Canadian Dollar</option>
-          <option value="CHF">CHF — Swiss Franc</option>
-          <option value="NZD">NZD — New Zealand Dollar</option>
-          <option value="BDT">BDT — Bangladeshi Taka</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Quote = Account Currency?</label>
-        <select id="customQuoteIsAcct">
-          <option value="yes">Yes (e.g. quote USD, acct USD)</option>
-          <option value="no">No — enter conversion rate below</option>
-        </select>
-      </div>
-    </div>
-  </div>
+ <div class="pair-tabs">
+ <div class="pair-tab active" id="tab-major" onclick="switchTab('major')">📊 28 Major Pairs (Live)</div>
+ <div class="pair-tab" id="tab-custom" onclick="switchTab('custom')">✏️ Custom Pair</div>
+ </div>
 
-  <!-- ── TRADE DETAILS (shared) ── -->
-  <div class="sec-label">02 — Trade Details</div>
-  <div class="g3" style="margin-bottom:12px;">
-    <div class="field">
-      <label data-tip="Number of lots to trade">Lot Size</label>
-      <div class="inp-wrap">
-        <span class="inp-ico">◈</span>
-        <input type="number" id="lotSize" value="1" min="0.01" step="0.01">
-        <span class="inp-unit">LOT</span>
-      </div>
-    </div>
-    <div class="field">
-      <label data-tip="Number of pips to calculate">Pip Amount</label>
-      <div class="inp-wrap">
-        <span class="inp-ico">△</span>
-        <input type="number" id="pipAmount" value="50" min="0.1" step="0.1">
-        <span class="inp-unit">PIP</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>Lot Type</label>
-      <select id="lotType" onchange="toggleCustomUnits()">
-        <option value="standard">Standard (100k)</option>
-        <option value="mini">Mini (10k)</option>
-        <option value="micro">Micro (1k)</option>
-        <option value="nano">Nano (100)</option>
-        <option value="custom">Custom Units</option>
-      </select>
-    </div>
-  </div>
+ <!-- MAJOR PAIRS -->
+ <div id="sec-major">
+ <div class="sec-label">01 — Select Pair</div>
+ <div class="g2" style="margin-bottom:12px;">
+ <div class="field">
+ <label>Currency Pair</label>
+ <select id="pair" onchange="onPairChange()">
+ <optgroup label="── USD Majors ──">
+ <option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
+ <option value="USDJPY">USD/JPY</option><option value="USDCHF">USD/CHF</option>
+ <option value="AUDUSD">AUD/USD</option><option value="USDCAD">USD/CAD</option>
+ <option value="NZDUSD">NZD/USD</option>
+ </optgroup>
+ <optgroup label="── EUR Crosses ──">
+ <option value="EURGBP">EUR/GBP</option><option value="EURJPY">EUR/JPY</option>
+ <option value="EURCHF">EUR/CHF</option><option value="EURAUD">EUR/AUD</option>
+ <option value="EURCAD">EUR/CAD</option><option value="EURNZD">EUR/NZD</option>
+ </optgroup>
+ <optgroup label="── GBP Crosses ──">
+ <option value="GBPJPY">GBP/JPY</option><option value="GBPCHF">GBP/CHF</option>
+ <option value="GBPAUD">GBP/AUD</option><option value="GBPCAD">GBP/CAD</option>
+ <option value="GBPNZD">GBP/NZD</option>
+ </optgroup>
+ <optgroup label="── AUD/NZD Crosses ──">
+ <option value="AUDJPY">AUD/JPY</option><option value="AUDCHF">AUD/CHF</option>
+ <option value="AUDCAD">AUD/CAD</option><option value="AUDNZD">AUD/NZD</option>
+ <option value="NZDJPY">NZD/JPY</option><option value="NZDCHF">NZD/CHF</option>
+ <option value="NZDCAD">NZD/CAD</option>
+ </optgroup>
+ <optgroup label="── Other Crosses ──">
+ <option value="CHFJPY">CHF/JPY</option><option value="CADJPY">CAD/JPY</option>
+ <option value="CADCHF">CAD/CHF</option>
+ </optgroup>
+ <optgroup label="── Metals / Crypto (manual rate) ──">
+ <option value="XAUUSD">XAU/USD (Gold)</option>
+ <option value="XAGUSD">XAG/USD (Silver)</option>
+ <option value="BTCUSD">BTC/USD</option>
+ </optgroup>
+ </select>
+ </div>
+ <div class="field">
+ <label>Account Currency</label>
+ <select id="accountCurrency">
+ <option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option>
+ <option value="GBP">GBP — British Pound</option><option value="JPY">JPY — Japanese Yen</option>
+ <option value="AUD">AUD — Australian Dollar</option><option value="CAD">CAD — Canadian Dollar</option>
+ <option value="CHF">CHF — Swiss Franc</option><option value="NZD">NZD — New Zealand Dollar</option>
+ <option value="BDT">BDT — Bangladeshi Taka</option>
+ </select>
+ </div>
+ </div>
+ <div class="pair-tags" id="pairTags">
+ <span class="tag tag-c" id="pairType">Standard Pair</span>
+ <span class="tag tag-g" id="pipSizeTag">Pip: 0.0001</span>
+ <span class="tag tag-c" id="quoteTag">Quote: USD</span>
+ <span class="tag tag-g" id="liveRateTag" style="display:none;">🟢 Live Rate</span>
+ </div>
+ </div>
 
-  <!-- Custom units row -->
-  <div id="customUnitsRow" style="display:none;margin-bottom:12px;">
-    <div class="field">
-      <label>Custom Contract Units</label>
-      <div class="inp-wrap">
-        <span class="inp-ico">#</span>
-        <input type="number" id="customUnits" value="100000" min="1">
-        <span class="inp-unit">UNITS</span>
-      </div>
-    </div>
-  </div>
+ <!-- CUSTOM PAIR -->
+ <div id="sec-custom" style="display:none;">
+ <div class="sec-label">01 — Custom Pair Setup</div>
+ <div class="custom-note">⚙️ Enter any exotic pair, index, commodity, or crypto manually. Live rate feed only covers the 28 major pairs.</div>
+ <div class="g3" style="margin-bottom:12px;">
+ <div class="field"><label>Base Currency / Symbol</label>
+ <div class="inp-wrap"><span class="inp-ico">◈</span><input type="text" id="customBase" placeholder="e.g. EUR, XAU, US30" maxlength="6" style="text-transform:uppercase;"></div>
+ </div>
+ <div class="field"><label>Quote Currency</label>
+ <div class="inp-wrap"><span class="inp-ico">◈</span><input type="text" id="customQuote" placeholder="e.g. USD, JPY" maxlength="6" style="text-transform:uppercase;"></div>
+ </div>
+ <div class="field"><label>Pip Size</label>
+ <select id="customPipSize">
+ <option value="0.0001">0.0001 (Standard 4d)</option><option value="0.01">0.01 (JPY / 2d)</option>
+ <option value="0.001">0.001 (3 decimal)</option><option value="0.1">0.1 (Index / 1d)</option>
+ <option value="1">1 (Crypto / 0d)</option><option value="0.00001">0.00001 (5 decimal)</option>
+ </select>
+ </div>
+ </div>
+ <div class="g2" style="margin-bottom:12px;">
+ <div class="field"><label>Account Currency</label>
+ <select id="customAcct">
+ <option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option>
+ <option value="GBP">GBP — British Pound</option><option value="JPY">JPY — Japanese Yen</option>
+ <option value="AUD">AUD — Australian Dollar</option><option value="CAD">CAD — Canadian Dollar</option>
+ <option value="CHF">CHF — Swiss Franc</option><option value="NZD">NZD — New Zealand Dollar</option>
+ <option value="BDT">BDT — Bangladeshi Taka</option>
+ </select>
+ </div>
+ <div class="field"><label>Quote = Account Currency?</label>
+ <select id="customQuoteIsAcct">
+ <option value="yes">Yes (e.g. quote USD, acct USD)</option>
+ <option value="no">No — enter conversion rate below</option>
+ </select>
+ </div>
+ </div>
+ </div>
 
-  <div class="g2" style="margin-bottom:12px;">
-    <div class="field">
-      <label data-tip="Current exchange rate of the pair">Exchange Rate</label>
-      <div class="inp-wrap">
-        <span class="inp-ico">≈</span>
-        <input type="number" id="exchangeRate" value="1.08500" step="0.00001">
-      </div>
-    </div>
-    <div class="field" id="acctRateField">
-      <label data-tip="Rate to convert quote currency → account currency">Conversion Rate</label>
-      <div class="inp-wrap">
-        <span class="inp-ico">↔</span>
-        <input type="number" id="acctRate" value="1.00000" step="0.00001">
-      </div>
-    </div>
-  </div>
+ <!-- TRADE DETAILS -->
+ <div class="sec-label">02 — Trade Details</div>
+ <div class="g3" style="margin-bottom:12px;">
+ <div class="field"><label>Lot Size</label>
+ <div class="inp-wrap"><span class="inp-ico">◈</span><input type="number" id="lotSize" value="1" min="0.01" step="0.01"><span class="inp-unit">LOT</span></div>
+ </div>
+ <div class="field"><label>Pip Amount</label>
+ <div class="inp-wrap"><span class="inp-ico">△</span><input type="number" id="pipAmount" value="50" min="0.1" step="0.1"><span class="inp-unit">PIP</span></div>
+ </div>
+ <div class="field"><label>Lot Type</label>
+ <select id="lotType" onchange="toggleCustomUnits()">
+ <option value="standard">Standard (100k)</option><option value="mini">Mini (10k)</option>
+ <option value="micro">Micro (1k)</option><option value="nano">Nano (100)</option>
+ <option value="custom">Custom Units</option>
+ </select>
+ </div>
+ </div>
 
-  <!-- Pip type -->
-  <div class="field" style="margin-bottom:4px;">
-    <label>Pip Type</label>
-    <div class="pip-toggle">
-      <label><input type="radio" name="pipType" value="standard" checked><span>Standard (4d / 2d)</span></label>
-      <label><input type="radio" name="pipType" value="fractional"><span>Fractional (5d / 3d)</span></label>
-    </div>
-  </div>
+ <div id="customUnitsRow" style="display:none;margin-bottom:12px;">
+ <div class="field"><label>Custom Contract Units</label>
+ <div class="inp-wrap"><span class="inp-ico">#</span><input type="number" id="customUnits" value="100000" min="1"><span class="inp-unit">UNITS</span></div>
+ </div>
+ </div>
 
-  <div class="err" id="errMsg"></div>
+ <div class="g2" style="margin-bottom:12px;">
+ <div class="field">
+ <label>Exchange Rate <span class="live-tag-inline manual" id="rateSrcTag">manual</span></label>
+ <div class="inp-wrap"><span class="inp-ico">≈</span><input type="number" id="exchangeRate" value="1.08500" step="0.00001"></div>
+ </div>
+ <div class="field" id="acctRateField">
+ <label data-tip="Rate to convert quote currency → account currency">Conversion Rate</label>
+ <div class="inp-wrap"><span class="inp-ico">↔</span><input type="number" id="acctRate" value="1.00000" step="0.00001"></div>
+ </div>
+ </div>
 
-  <!-- Button -->
-  <button class="btn-calc" onclick="calculate()"><span>⚡ Calculate Pip Value</span></button>
+ <div class="field" style="margin-bottom:4px;">
+ <label>Pip Type</label>
+ <div class="pip-toggle">
+ <label><input type="radio" name="pipType" value="standard" checked><span>Standard (4d / 2d)</span></label>
+ <label><input type="radio" name="pipType" value="fractional"><span>Fractional (5d / 3d)</span></label>
+ </div>
+ </div>
 
-  <!-- Results -->
-  <div class="results" id="results" style="display:none;">
-    <div class="divider"></div>
-    <div class="sec-label">Results</div>
-    <div class="res-grid">
-      <div class="res-card big">
-        <div class="res-lbl">Pip Value (per pip)</div>
-        <div class="res-val" id="rPipVal">—</div>
-        <div class="res-sub" id="rPipSub">Single pip movement value</div>
-      </div>
-      <div class="res-card">
-        <div class="res-lbl">Total Value</div>
-        <div class="res-val" id="rTotal">—</div>
-        <div class="res-sub" id="rTotalSub">For all entered pips</div>
-      </div>
-      <div class="res-card">
-        <div class="res-lbl">Profit if Favorable</div>
-        <div class="res-val pos" id="rPL">—</div>
-        <div class="res-sub">If price moves in your favor</div>
-      </div>
-    </div>
+ <div class="err" id="calcErrMsg"></div>
 
-    <!-- Breakdown -->
-    <div class="bk" id="breakdown">
-      <div class="bk-hdr">📊 Trade Breakdown</div>
-      <div class="bk-row"><span class="bk-k">Instrument</span><span class="bk-v" id="bdPair">—</span></div>
-      <div class="bk-row"><span class="bk-k">Lot Size</span><span class="bk-v" id="bdLot">—</span></div>
-      <div class="bk-row"><span class="bk-k">Contract Size</span><span class="bk-v" id="bdUnits">—</span></div>
-      <div class="bk-row"><span class="bk-k">Pip Size Used</span><span class="bk-v" id="bdPipSz">—</span></div>
-      <div class="bk-row"><span class="bk-k">Pip Value (1 pip)</span><span class="bk-v" id="bdPipV">—</span></div>
-      <div class="bk-row"><span class="bk-k">Pips Calculated</span><span class="bk-v" id="bdPips">—</span></div>
-      <div class="bk-row"><span class="bk-k">Account Currency</span><span class="bk-v" id="bdAcct">—</span></div>
-      <div class="bk-row"><span class="bk-k">Exchange Rate</span><span class="bk-v" id="bdRate">—</span></div>
-    </div>
+ <button class="btn-calc" onclick="calculate()"><span>⚡ Calculate Pip Value</span></button>
 
-    <span class="reset-btn" onclick="resetCalc()">↺ Reset Calculator</span>
-  </div>
+ <div class="results" id="results" style="display:none;">
+ <div class="divider"></div>
+ <div class="sec-label">Results</div>
+ <div class="res-grid">
+ <div class="res-card big"><div class="res-lbl">Pip Value (per pip)</div><div class="res-val" id="rPipVal">—</div><div class="res-sub" id="rPipSub">Single pip movement value</div></div>
+ <div class="res-card"><div class="res-lbl">Total Value</div><div class="res-val" id="rTotal">—</div><div class="res-sub" id="rTotalSub">For all entered pips</div></div>
+ <div class="res-card"><div class="res-lbl">Profit if Favorable</div><div class="res-val pos" id="rPL">—</div><div class="res-sub">If price moves in your favor</div></div>
+ </div>
+ <div class="bk" id="breakdown">
+ <div class="bk-hdr">📊 Trade Breakdown</div>
+ <div class="bk-row"><span class="bk-k">Instrument</span><span class="bk-v" id="bdPair">—</span></div>
+ <div class="bk-row"><span class="bk-k">Lot Size</span><span class="bk-v" id="bdLot">—</span></div>
+ <div class="bk-row"><span class="bk-k">Contract Size</span><span class="bk-v" id="bdUnits">—</span></div>
+ <div class="bk-row"><span class="bk-k">Pip Size Used</span><span class="bk-v" id="bdPipSz">—</span></div>
+ <div class="bk-row"><span class="bk-k">Pip Value (1 pip)</span><span class="bk-v" id="bdPipV">—</span></div>
+ <div class="bk-row"><span class="bk-k">Pips Calculated</span><span class="bk-v" id="bdPips">—</span></div>
+ <div class="bk-row"><span class="bk-k">Account Currency</span><span class="bk-v" id="bdAcct">—</span></div>
+ <div class="bk-row"><span class="bk-k">Exchange Rate</span><span class="bk-v" id="bdRate">—</span></div>
+ </div>
+ <span class="reset-btn" onclick="resetCalc()">↺ Reset Calculator</span>
+ </div>
 
-  <!-- Info strip -->
-  <div class="info-row">
-    <div class="inf-card">
-      <div class="inf-ico">📐</div>
-      <div class="inf-ttl">What is a Pip?</div>
-      <div class="inf-txt">Smallest price move. Most pairs: 0.0001. JPY pairs: 0.01. Gold: 0.01. Crypto: 1.</div>
-    </div>
-    <div class="inf-card">
-      <div class="inf-ico">📦</div>
-      <div class="inf-ttl">Lot Sizes</div>
-      <div class="inf-txt">Standard=100k · Mini=10k · Micro=1k · Nano=100. Use Custom for indices.</div>
-    </div>
-    <div class="inf-card">
-      <div class="inf-ico">🧮</div>
-      <div class="inf-ttl">Formula</div>
-      <div class="inf-txt">Pip Value = (Pip Size × Units) ÷ Rate × Conversion Rate</div>
-    </div>
-  </div>
+ <div class="info-row">
+ <div class="inf-card"><div class="inf-ico">📡</div><div class="inf-ttl">Live Feed</div><div class="inf-txt">Rates auto-fill from your MT4 EA data stream, refreshed every 30 seconds.</div></div>
+ <div class="inf-card"><div class="inf-ico">📦</div><div class="inf-ttl">Lot Sizes</div><div class="inf-txt">Standard=100k · Mini=10k · Micro=1k · Nano=100.</div></div>
+ <div class="inf-card"><div class="inf-ico">🧮</div><div class="inf-ttl">Formula</div><div class="inf-txt">Pip Value = (Pip Size × Units) ÷ Rate × Conversion Rate</div></div>
+ </div>
 
-  <div class="calc-foot">FOREX PIP CALCULATOR &nbsp;·&nbsp; FOR EDUCATIONAL USE &nbsp;·&nbsp; RATES INDICATIVE</div>
+ <div class="calc-foot">FOREX PIP CALCULATOR &nbsp;·&nbsp; LIVE RATE FEED &nbsp;·&nbsp; FOR EDUCATIONAL USE</div>
 
-</div><!-- /.calc-inner -->
-</div><!-- /.pip-calc-shell -->
+</div></div>
 
-<!-- ============================================================
-     JAVASCRIPT
-     ============================================================ -->
 <script>
-/* ── Pair database (31 pairs + metals + crypto) ─────────────── */
+/* ══════════════════════════════════════════════
+ CONFIG — matches your live forex_data.json feed
+ ══════════════════════════════════════════════ */
+/* Relative URL — works in both iframe and direct access */
+var DATA_URL = 'forex_data.json';
+var REFRESH_MS = 5000;
+
+// 28 majors (must match your EA feed's pair keys) + 3 manual-only instruments
 const PD = {
-  EURUSD:{pip:0.0001,dec:4,type:"USD Major",  quote:"USD",base:"EUR",rate:1.0850},
-  GBPUSD:{pip:0.0001,dec:4,type:"USD Major",  quote:"USD",base:"GBP",rate:1.2650},
-  USDJPY:{pip:0.01,  dec:2,type:"JPY Pair",   quote:"JPY",base:"USD",rate:149.50},
-  USDCHF:{pip:0.0001,dec:4,type:"USD Major",  quote:"CHF",base:"USD",rate:0.8980},
-  AUDUSD:{pip:0.0001,dec:4,type:"USD Major",  quote:"USD",base:"AUD",rate:0.6550},
-  USDCAD:{pip:0.0001,dec:4,type:"USD Major",  quote:"CAD",base:"USD",rate:1.3580},
-  NZDUSD:{pip:0.0001,dec:4,type:"USD Major",  quote:"USD",base:"NZD",rate:0.6120},
-  EURGBP:{pip:0.0001,dec:4,type:"EUR Cross",  quote:"GBP",base:"EUR",rate:0.8570},
-  EURJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"EUR",rate:162.20},
-  EURCHF:{pip:0.0001,dec:4,type:"EUR Cross",  quote:"CHF",base:"EUR",rate:0.9740},
-  EURAUD:{pip:0.0001,dec:4,type:"EUR Cross",  quote:"AUD",base:"EUR",rate:1.6560},
-  EURCAD:{pip:0.0001,dec:4,type:"EUR Cross",  quote:"CAD",base:"EUR",rate:1.4730},
-  EURNZD:{pip:0.0001,dec:4,type:"EUR Cross",  quote:"NZD",base:"EUR",rate:1.7720},
-  GBPJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"GBP",rate:189.00},
-  GBPCHF:{pip:0.0001,dec:4,type:"GBP Cross",  quote:"CHF",base:"GBP",rate:1.1350},
-  GBPAUD:{pip:0.0001,dec:4,type:"GBP Cross",  quote:"AUD",base:"GBP",rate:1.9310},
-  GBPCAD:{pip:0.0001,dec:4,type:"GBP Cross",  quote:"CAD",base:"GBP",rate:1.7180},
-  GBPNZD:{pip:0.0001,dec:4,type:"GBP Cross",  quote:"NZD",base:"GBP",rate:2.0660},
-  AUDJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"AUD",rate:98.00},
-  AUDCHF:{pip:0.0001,dec:4,type:"AUD Cross",  quote:"CHF",base:"AUD",rate:0.5880},
-  AUDCAD:{pip:0.0001,dec:4,type:"AUD Cross",  quote:"CAD",base:"AUD",rate:0.8900},
-  AUDNZD:{pip:0.0001,dec:4,type:"AUD Cross",  quote:"NZD",base:"AUD",rate:1.0780},
-  NZDJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"NZD",rate:91.60},
-  NZDCHF:{pip:0.0001,dec:4,type:"NZD Cross",  quote:"CHF",base:"NZD",rate:0.5500},
-  NZDCAD:{pip:0.0001,dec:4,type:"NZD Cross",  quote:"CAD",base:"NZD",rate:0.8310},
-  CHFJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"CHF",rate:166.50},
-  CADJPY:{pip:0.01,  dec:2,type:"JPY Cross",  quote:"JPY",base:"CAD",rate:110.10},
-  CADCHF:{pip:0.0001,dec:4,type:"CAD Cross",  quote:"CHF",base:"CAD",rate:0.6610},
-  XAUUSD:{pip:0.01,  dec:2,type:"Commodity",  quote:"USD",base:"XAU",rate:2345.0},
-  XAGUSD:{pip:0.001, dec:3,type:"Commodity",  quote:"USD",base:"XAG",rate:29.50},
-  BTCUSD:{pip:1,     dec:0,type:"Crypto",     quote:"USD",base:"BTC",rate:68500},
+ EURUSD:{pip:0.0001,dec:4,type:"USD Major",quote:"USD",base:"EUR",fallback:1.0850,live:true},
+ GBPUSD:{pip:0.0001,dec:4,type:"USD Major",quote:"USD",base:"GBP",fallback:1.2650,live:true},
+ USDJPY:{pip:0.01, dec:2,type:"JPY Pair", quote:"JPY",base:"USD",fallback:149.50,live:true},
+ USDCHF:{pip:0.0001,dec:4,type:"USD Major",quote:"CHF",base:"USD",fallback:0.8980,live:true},
+ AUDUSD:{pip:0.0001,dec:4,type:"USD Major",quote:"USD",base:"AUD",fallback:0.6550,live:true},
+ USDCAD:{pip:0.0001,dec:4,type:"USD Major",quote:"CAD",base:"USD",fallback:1.3580,live:true},
+ NZDUSD:{pip:0.0001,dec:4,type:"USD Major",quote:"USD",base:"NZD",fallback:0.6120,live:true},
+ EURGBP:{pip:0.0001,dec:4,type:"EUR Cross",quote:"GBP",base:"EUR",fallback:0.8570,live:true},
+ EURJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"EUR",fallback:162.20,live:true},
+ EURCHF:{pip:0.0001,dec:4,type:"EUR Cross",quote:"CHF",base:"EUR",fallback:0.9740,live:true},
+ EURAUD:{pip:0.0001,dec:4,type:"EUR Cross",quote:"AUD",base:"EUR",fallback:1.6560,live:true},
+ EURCAD:{pip:0.0001,dec:4,type:"EUR Cross",quote:"CAD",base:"EUR",fallback:1.4730,live:true},
+ EURNZD:{pip:0.0001,dec:4,type:"EUR Cross",quote:"NZD",base:"EUR",fallback:1.7720,live:true},
+ GBPJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"GBP",fallback:189.00,live:true},
+ GBPCHF:{pip:0.0001,dec:4,type:"GBP Cross",quote:"CHF",base:"GBP",fallback:1.1350,live:true},
+ GBPAUD:{pip:0.0001,dec:4,type:"GBP Cross",quote:"AUD",base:"GBP",fallback:1.9310,live:true},
+ GBPCAD:{pip:0.0001,dec:4,type:"GBP Cross",quote:"CAD",base:"GBP",fallback:1.7180,live:true},
+ GBPNZD:{pip:0.0001,dec:4,type:"GBP Cross",quote:"NZD",base:"GBP",fallback:2.0660,live:true},
+ AUDJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"AUD",fallback:98.00, live:true},
+ AUDCHF:{pip:0.0001,dec:4,type:"AUD Cross",quote:"CHF",base:"AUD",fallback:0.5880,live:true},
+ AUDCAD:{pip:0.0001,dec:4,type:"AUD Cross",quote:"CAD",base:"AUD",fallback:0.8900,live:true},
+ AUDNZD:{pip:0.0001,dec:4,type:"AUD Cross",quote:"NZD",base:"AUD",fallback:1.0780,live:true},
+ NZDJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"NZD",fallback:91.60, live:true},
+ NZDCHF:{pip:0.0001,dec:4,type:"NZD Cross",quote:"CHF",base:"NZD",fallback:0.5500,live:true},
+ NZDCAD:{pip:0.0001,dec:4,type:"NZD Cross",quote:"CAD",base:"NZD",fallback:0.8310,live:true},
+ CHFJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"CHF",fallback:166.50,live:true},
+ CADJPY:{pip:0.01, dec:2,type:"JPY Cross",quote:"JPY",base:"CAD",fallback:110.10,live:true},
+ CADCHF:{pip:0.0001,dec:4,type:"CAD Cross",quote:"CHF",base:"CAD",fallback:0.6610,live:true},
+ XAUUSD:{pip:0.01, dec:2,type:"Commodity",quote:"USD",base:"XAU",fallback:2345.0,live:false},
+ XAGUSD:{pip:0.001, dec:3,type:"Commodity",quote:"USD",base:"XAG",fallback:29.50, live:false},
+ BTCUSD:{pip:1, dec:0,type:"Crypto", quote:"USD",base:"BTC",fallback:68500, live:false},
 };
 
 const SYM = {USD:'$',EUR:'€',GBP:'£',JPY:'¥',AUD:'A$',CAD:'C$',CHF:'Fr',NZD:'NZ$',BDT:'৳'};
 const LOT_MULT = {standard:100000,mini:10000,micro:1000,nano:100};
 
 let currentTab = 'major';
+let liveData = null;
+let liveOk = false;
+let cdTimer = null;
+let countdown = 30;
+let prevPrices = {};
 
-/* ── Tab switching ──────────────────────────────────────────── */
+/* ── FETCH LIVE DATA ───────────────────────────────── */
+/* forex_data.json is a flat structure:
+   { EURUSD: {bid, ask, spread, digits, tf:{...}},
+     GBPJPY: {bid, ask, ...},
+     ...,
+     summary: {pairs_sent:28, ...}
+   }
+   IMPORTANT: data is NOT nested under a "pairs" key.
+   Each symbol key has bid/ask/spread/digits/tf directly.
+*/
+async function fetchLiveData() {
+ try {
+ var res = await fetch(DATA_URL + '?_=' + Date.now(), { method:'GET', cache:'no-store', headers:{'Accept':'application/json'} });
+ if (!res.ok) throw new Error('HTTP ' + res.status);
+ var fresh = await res.json();
+
+ // Snapshot previous mid-prices before overwriting
+ if (liveData) {
+ Object.keys(PD).forEach(function(sym) {
+ var p = liveData[sym];
+ if (p && typeof p.bid === 'number' && typeof p.ask === 'number') {
+ prevPrices[sym] = (p.bid + p.ask) / 2;
+ }
+ });
+ }
+
+ liveData = fresh;
+ liveOk = true;
+ hideErr();
+ } catch (e) {
+ console.error('Pip Calculator live fetch error:', e);
+ liveOk = false;
+ showErr('⚠ Unable to connect to the live rate feed. Showing manual/fallback rates — you can still enter values manually. Retrying automatically...');
+ }
+ setLiveBadge();
+ buildTicker();
+ if (currentTab === 'major') applyLiveRate();
+ var now = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+ document.getElementById('lastUpdateTxt').textContent = 'Last update: ' + now;
+}
+
+function setLiveBadge() {
+ var b = document.getElementById('liveBadge');
+ var t = document.getElementById('liveBadgeText');
+ if (liveOk) { b.classList.remove('offline'); t.textContent = 'Live'; }
+ else { b.classList.add('offline'); t.textContent = 'Offline'; }
+}
+
+/* Returns { bid, ask, mid } or null if this pair isn't in the live feed */
+function getLiveQuote(sym) {
+ if (!liveOk || !liveData) return null;
+ /* FIX: data is flat (not nested under .pairs) */
+ var p = liveData[sym];
+ if (!p || typeof p.bid !== 'number' || typeof p.ask !== 'number') return null;
+ return { bid: p.bid, ask: p.ask, mid: (p.bid + p.ask) / 2, spread: p.spread };
+}
+
+/* ── TICKER (built from live data) ──────────────────── */
+function buildTicker() {
+ var el = document.getElementById('ticker');
+ if (!el) return;
+ var items = [];
+ Object.keys(PD).forEach(function(sym) {
+ if (!PD[sym].live) return;
+ var d = PD[sym];
+ var label = sym.slice(0,3) + '/' + sym.slice(3);
+ var q = getLiveQuote(sym);
+ if (q) {
+ var prev = prevPrices[sym];
+ var chg = (typeof prev === 'number') ? (q.mid - prev) : 0;
+ items.push({ pair: label, px: q.mid.toFixed(d.dec), chg: (typeof prev==='number') ? ((chg>=0?'+':'') + chg.toFixed(d.dec)) : '—', up: chg >= 0, stale:false });
+ } else {
+ items.push({ pair: label, px: d.fallback.toFixed(d.dec), chg: '—', up: true, stale:true });
+ }
+ });
+ var all = items.concat(items); // duplicate for seamless loop
+ el.innerHTML = all.map(function(t) {
+ return '<div class="tick"><span class="tick-pair">' + t.pair +
+ '</span><span class="tick-px">' + t.px +
+ '</span><span class="' + (t.up?'up':'dn') + '">' +
+ (t.stale ? '· offline' : (t.up?'▲':'▼') + ' ' + t.chg) +
+ '</span></div>';
+ }).join('');
+}
+
+/* ── PAIR SELECT / LIVE RATE FILL ────────────────────── */
+function onPairChange() { applyLiveRate(); }
+
+function applyLiveRate() {
+ var sym = document.getElementById('pair').value;
+ var d = PD[sym];
+ document.getElementById('pairType').textContent = d.type;
+ document.getElementById('pipSizeTag').textContent = 'Pip: ' + d.pip;
+ document.getElementById('quoteTag').textContent = 'Quote: ' + d.quote;
+
+ var typeColors = {'USD Major':'tag-g','JPY Pair':'tag-gold','JPY Cross':'tag-gold','Commodity':'tag-gold','Crypto':'tag-gold'};
+ document.getElementById('pairType').className = 'tag ' + (typeColors[d.type] || 'tag-c');
+
+ var rateInput = document.getElementById('exchangeRate');
+ var srcTag = document.getElementById('rateSrcTag');
+ var liveTag = document.getElementById('liveRateTag');
+
+ if (d.live) {
+ var q = getLiveQuote(sym);
+ if (q) {
+ rateInput.value = q.mid.toFixed(d.dec === 0 ? 2 : d.dec);
+ rateInput.classList.add('live-filled');
+ srcTag.textContent = 'live'; srcTag.classList.remove('manual');
+ liveTag.style.display = 'inline-block';
+ liveTag.textContent = '🟢 Live (Bid ' + q.bid.toFixed(d.dec) + ' / Ask ' + q.ask.toFixed(d.dec) + ')';
+ } else {
+ rateInput.value = d.fallback;
+ rateInput.classList.remove('live-filled');
+ srcTag.textContent = 'fallback'; srcTag.classList.add('manual');
+ liveTag.style.display = 'none';
+ }
+ } else {
+ rateInput.value = d.fallback;
+ rateInput.classList.remove('live-filled');
+ srcTag.textContent = 'manual'; srcTag.classList.add('manual');
+ liveTag.style.display = 'none';
+ }
+}
+
+/* ── TABS ─────────────────────────────────────────── */
 function switchTab(tab) {
-  currentTab = tab;
-  ['major','custom'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('sec-'+t).style.display = t===tab ? 'block' : 'none';
-  });
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errMsg').style.display = 'none';
+ currentTab = tab;
+ ['major','custom'].forEach(function(t) {
+ document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+ document.getElementById('sec-'+t).style.display = t===tab ? 'block' : 'none';
+ });
+ document.getElementById('results').style.display = 'none';
+ document.getElementById('calcErrMsg').style.display = 'none';
+ if (tab === 'major') applyLiveRate();
 }
 
-/* ── Pair info tags ─────────────────────────────────────────── */
-function updatePairInfo() {
-  const p = document.getElementById('pair').value;
-  const d = PD[p];
-  document.getElementById('pairType').textContent = d.type;
-  document.getElementById('pipSizeTag').textContent = 'Pip: '+d.pip;
-  document.getElementById('quoteTag').textContent = 'Quote: '+d.quote;
-  document.getElementById('exchangeRate').value = d.rate;
-  // Set pip size tag color
-  const typeColors = {'USD Major':'tag-g','JPY Pair':'tag-gold','JPY Cross':'tag-gold','Commodity':'tag-gold','Crypto':'tag-gold'};
-  document.getElementById('pairType').className = 'tag ' + (typeColors[d.type] || 'tag-c');
-  // Override with live rate if available
-  if (window._FX) {
-    var sym = p;
-    var ld = window._FX[sym];
-    if (ld && ld.bid) {
-      document.getElementById('exchangeRate').value = ld.bid.toFixed(ld.digits || 5);
-    }
-  }
-}
-
-/* ── Lot type ───────────────────────────────────────────────── */
+/* ── LOT HELPERS ─────────────────────────────────────── */
 function toggleCustomUnits() {
-  const v = document.getElementById('lotType').value;
-  document.getElementById('customUnitsRow').style.display = v === 'custom' ? 'block' : 'none';
+ document.getElementById('customUnitsRow').style.display = document.getElementById('lotType').value === 'custom' ? 'block' : 'none';
 }
-
 function getUnits() {
-  const t = document.getElementById('lotType').value;
-  const lots = parseFloat(document.getElementById('lotSize').value) || 1;
-  if (t === 'custom') return parseFloat(document.getElementById('customUnits').value) || 100000;
-  return LOT_MULT[t] * lots;
+ var t = document.getElementById('lotType').value;
+ var lots = parseFloat(document.getElementById('lotSize').value) || 1;
+ if (t === 'custom') return parseFloat(document.getElementById('customUnits').value) || 100000;
+ return LOT_MULT[t] * lots;
 }
-
 function getLotLabel() {
-  const t = document.getElementById('lotType').value;
-  const lots = parseFloat(document.getElementById('lotSize').value) || 1;
-  if (t === 'custom') return document.getElementById('customUnits').value + ' units (custom)';
-  const L = {standard:'Standard',mini:'Mini',micro:'Micro',nano:'Nano'};
-  return lots + ' ' + L[t] + ' lot' + (lots !== 1 ? 's' : '');
+ var t = document.getElementById('lotType').value;
+ var lots = parseFloat(document.getElementById('lotSize').value) || 1;
+ if (t === 'custom') return document.getElementById('customUnits').value + ' units (custom)';
+ var L = {standard:'Standard',mini:'Mini',micro:'Micro',nano:'Nano'};
+ return lots + ' ' + L[t] + ' lot' + (lots !== 1 ? 's' : '');
 }
 
-/* ── Main calculation ───────────────────────────────────────── */
+/* ── CALCULATION ─────────────────────────────────────── */
 function calculate() {
-  const errEl = document.getElementById('errMsg');
-  errEl.style.display = 'none';
+ document.getElementById('calcErrMsg').style.display = 'none';
 
-  const lotSize    = parseFloat(document.getElementById('lotSize').value);
-  const pipAmount  = parseFloat(document.getElementById('pipAmount').value);
-  const exchRate   = parseFloat(document.getElementById('exchangeRate').value);
-  const acctRate   = parseFloat(document.getElementById('acctRate').value);
-  const isFrac     = document.querySelector('input[name="pipType"]:checked').value === 'fractional';
+ var lotSize = parseFloat(document.getElementById('lotSize').value);
+ var pipAmount = parseFloat(document.getElementById('pipAmount').value);
+ var exchRate = parseFloat(document.getElementById('exchangeRate').value);
+ var acctRate = parseFloat(document.getElementById('acctRate').value);
+ var isFrac = document.querySelector('input[name="pipType"]:checked').value === 'fractional';
 
-  let pipSz, units, quote, accountCurrency, pairLabel;
+ var pipSz, quote, accountCurrency, pairLabel, base;
 
-  if (currentTab === 'major') {
-    const sym = document.getElementById('pair').value;
-    const d   = PD[sym];
-    pipSz          = isFrac ? d.pip / 10 : d.pip;
-    quote          = d.quote;
-    accountCurrency= document.getElementById('accountCurrency').value;
-    pairLabel      = sym.slice(0,3) + '/' + sym.slice(3);
-  } else {
-    // Custom pair
-    const base  = document.getElementById('customBase').value.trim().toUpperCase();
-    const qt    = document.getElementById('customQuote').value.trim().toUpperCase();
-    pipSz       = parseFloat(document.getElementById('customPipSize').value);
-    quote       = qt || 'USD';
-    accountCurrency = document.getElementById('customAcct').value;
-    pairLabel   = (base || '?') + '/' + (qt || '?');
-    if (!base || !qt) {
-      showErr('⚠ Please enter both Base and Quote currency for your custom pair.');
-      return;
-    }
-  }
+ if (currentTab === 'major') {
+ var sym = document.getElementById('pair').value;
+ var d = PD[sym];
+ pipSz = isFrac ? d.pip / 10 : d.pip;
+ quote = d.quote; base = d.base;
+ accountCurrency = document.getElementById('accountCurrency').value;
+ pairLabel = sym.slice(0,3) + '/' + sym.slice(3);
+ } else {
+ var b = document.getElementById('customBase').value.trim().toUpperCase();
+ var q = document.getElementById('customQuote').value.trim().toUpperCase();
+ if (!b || !q) { showCalcErr('⚠ Please enter both Base and Quote currency for your custom pair.'); return; }
+ pipSz = parseFloat(document.getElementById('customPipSize').value);
+ quote = q; base = b;
+ accountCurrency = document.getElementById('customAcct').value;
+ pairLabel = b + '/' + q;
+ }
 
-  units = getUnits();
+ var units = getUnits();
 
-  // Validate
-  if (!lotSize || !pipAmount || !exchRate || !acctRate ||
-      lotSize<=0 || pipAmount<=0 || exchRate<=0 || acctRate<=0) {
-    showErr('⚠ Please enter valid positive values for all fields.'); return;
-  }
+ if (!lotSize || !pipAmount || !exchRate || !acctRate || lotSize<=0 || pipAmount<=0 || exchRate<=0 || acctRate<=0) {
+ showCalcErr('⚠ Please enter valid positive values for all fields.'); return;
+ }
 
-  // Pip value in quote currency
-  const rawPipVal = pipSz * units;
+ var pipValue;
+ if (base === 'USD' && quote !== 'USD') {
+ var raw = (pipSz * units) / exchRate;
+ if (accountCurrency === 'USD') pipValue = raw;
+ else if (quote === accountCurrency) pipValue = raw * exchRate;
+ else pipValue = raw * acctRate;
+ } else if (quote === 'USD') {
+ pipValue = pipSz * units;
+ if (accountCurrency !== 'USD') pipValue = pipValue * acctRate;
+ } else {
+ pipValue = (pipSz * units) / exchRate;
+ if (accountCurrency !== 'USD') pipValue = pipValue * acctRate;
+ }
 
-  // Convert to account currency
-  let pipValue;
-  if (quote === accountCurrency) {
-    // Quote = account, no conversion needed
-    pipValue = rawPipVal;
-  } else if (quote === 'USD' && accountCurrency !== 'USD') {
-    // Quote USD → account non-USD: divide by acctRate (e.g. USD→BDT: ×rate)
-    pipValue = rawPipVal * acctRate;
-  } else if (quote !== 'USD' && accountCurrency === 'USD') {
-    // Quote non-USD → account USD
-    pipValue = rawPipVal / exchRate;
-  } else {
-    // Cross: use provided conversion rate
-    pipValue = rawPipVal * acctRate / exchRate;
-  }
+ var totalValue = pipValue * pipAmount;
+ var sym2 = SYM[accountCurrency] || accountCurrency + ' ';
 
-  // If base is USD (like USDXXX pairs) the formula differs
-  // For USD/JPY: pip value = (pip × units) / rate
-  if (currentTab === 'major') {
-    const sym = document.getElementById('pair').value;
-    const d = PD[sym];
-    if (d.base === 'USD' && d.quote !== 'USD') {
-      const rawPV = (pipSz * units) / exchRate;
-      if (accountCurrency === 'USD') pipValue = rawPV;
-      else if (d.quote === accountCurrency) pipValue = rawPV * exchRate;
-      else pipValue = rawPV * acctRate;
-    } else if (d.quote === 'USD') {
-      pipValue = pipSz * units;
-      if (accountCurrency !== 'USD') pipValue = pipValue * acctRate;
-    } else {
-      // cross pair: pip in quote, convert to USD then to account
-      pipValue = (pipSz * units) / exchRate;
-      if (accountCurrency !== 'USD') pipValue = pipValue * acctRate;
-    }
-  }
+ document.getElementById('results').style.display = 'block';
+ setVal('rPipVal', sym2 + fmt(pipValue));
+ setVal('rTotal', sym2 + fmt(totalValue));
+ setVal('rPL', '+' + sym2 + fmt(totalValue));
+ document.getElementById('rPipSub').textContent = 'Per pip in ' + accountCurrency;
+ document.getElementById('rTotalSub').textContent = pipAmount + ' pips × ' + sym2 + fmt4(pipValue);
 
-  const totalValue = pipValue * pipAmount;
-  const sym2       = SYM[accountCurrency] || accountCurrency + ' ';
+ setText('bdPair', pairLabel);
+ setText('bdLot', getLotLabel());
+ setText('bdUnits', units.toLocaleString() + ' units');
+ setText('bdPipSz', pipSz.toString());
+ setText('bdPipV', sym2 + fmt4(pipValue) + ' ' + accountCurrency);
+ setText('bdPips', pipAmount);
+ setText('bdAcct', accountCurrency);
+ setText('bdRate', exchRate);
 
-  // Render
-  document.getElementById('results').style.display = 'block';
-
-  setVal('rPipVal', sym2 + fmt(pipValue));
-  setVal('rTotal',  sym2 + fmt(totalValue));
-  setVal('rPL',     '+' + sym2 + fmt(totalValue));
-
-  document.getElementById('rPipSub').textContent   = 'Per pip in ' + accountCurrency;
-  document.getElementById('rTotalSub').textContent  = pipAmount + ' pips × ' + sym2 + fmt4(pipValue);
-
-  // Breakdown
-  setText('bdPair',  pairLabel);
-  setText('bdLot',   getLotLabel());
-  setText('bdUnits', units.toLocaleString() + ' units');
-  setText('bdPipSz', pipSz.toString());
-  setText('bdPipV',  sym2 + fmt4(pipValue) + ' ' + accountCurrency);
-  setText('bdPips',  pipAmount);
-  setText('bdAcct',  accountCurrency);
-  setText('bdRate',  exchRate);
-
-  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'nearest'});
+ document.getElementById('results').scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-function showErr(msg) {
-  const e = document.getElementById('errMsg');
-  e.textContent = msg; e.style.display = 'block';
-  document.getElementById('results').style.display = 'none';
+function showCalcErr(msg) {
+ var e = document.getElementById('calcErrMsg');
+ e.textContent = msg; e.style.display = 'block';
+ document.getElementById('results').style.display = 'none';
 }
-
-function fmt(n)  { return n >= 1000 ? n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : n.toFixed(2); }
+function fmt(n) { return n >= 1000 ? n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : n.toFixed(2); }
 function fmt4(n) { return n.toFixed(4); }
-function setVal(id, v) { const el=document.getElementById(id); el.textContent=v; el.style.animation='none'; void el.offsetWidth; el.style.animation='popIn .4s ease both'; }
+function setVal(id, v) { var el=document.getElementById(id); el.textContent=v; el.style.animation='none'; void el.offsetWidth; el.style.animation='popIn .4s ease both'; }
 function setText(id, v) { document.getElementById(id).textContent = v; }
 
 function resetCalc() {
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errMsg').style.display  = 'none';
-  document.getElementById('lotSize').value    = '1';
-  document.getElementById('pipAmount').value  = '50';
-  updatePairInfo();
+ document.getElementById('results').style.display = 'none';
+ document.getElementById('calcErrMsg').style.display = 'none';
+ document.getElementById('lotSize').value = '1';
+ document.getElementById('pipAmount').value = '50';
+ if (currentTab === 'major') applyLiveRate();
 }
 
-/* ── Ticker ─────────────────────────────────────────────────── */
-/* ── Live Data + Ticker ──────────────────────────────────── */
-var _fxLoaded = false;
+/* ── ERROR BANNER (feed-level) ────────────────────────── */
+function showErr(msg) { var e=document.getElementById('errMsg'); e.style.display='block'; e.innerHTML=msg; }
+function hideErr() { document.getElementById('errMsg').style.display='none'; }
 
-function loadFxData() {
-  var x = new XMLHttpRequest();
-  x.open('GET', 'forex_data.json?t=' + Date.now(), true);
-  x.onreadystatechange = function() {
-    if (x.readyState !== 4) return;
-    if (x.status !== 200) { buildStaticTicker(); return; }
-    try {
-      var data = JSON.parse(x.responseText);
-      _fxLoaded = true;
-      var syms = 'EURUSD,GBPUSD,USDJPY,AUDUSD,USDCHF,USDCAD,EURGBP,EURJPY,EURCHF,EURAUD,EURCAD,EURNZD,GBPJPY,GBPCHF,GBPAUD,GBPCAD,GBPNZD,AUDJPY,AUDCHF,AUDCAD,AUDNZD,NZDJPY,NZDCHF,NZDCAD,NZDUSD,CHFJPY,CADJPY,CADCHF,XAUUSD'.split(',');
-      var items = [];
-      for (var i = 0; i < syms.length; i++) {
-        var s = syms[i];
-        var d = data[s];
-        if (!d || !d.bid) continue;
-        var pair = s.slice(0,3) + '/' + s.slice(3);
-        if (s === 'XAUUSD') pair = 'XAU/USD';
-        var digits = d.digits || 5;
-        var px = Number(d.bid).toFixed(digits);
-        var ch = '+0.00', up = true;
-        if (d.tf && d.tf.M5 && d.tf.M5.c && d.tf.M5.c.length > 1) {
-          var c = d.tf.M5.c;
-          var diff = d.bid - c[c.length-1];
-          ch = (diff >= 0 ? '+' : '') + diff.toFixed(digits);
-          up = diff >= 0;
-        }
-        items.push({pair:pair, px:px, ch:ch, up:up});
-      }
-      if (items.length > 0) renderTicker(items);
-      else buildStaticTicker();
-      // Auto-fill exchange rate
-      var sel = document.getElementById('pair');
-      if (sel) {
-        var sym = sel.value.replace('/','');
-        var d = data[sym];
-        if (d && d.bid) document.getElementById('exchangeRate').value = Number(d.bid).toFixed(d.digits || 5);
-      }
-    } catch(e) { buildStaticTicker(); }
-  };
-  x.send();
+/* ── REFRESH CYCLE ─────────────────────────────────────── */
+function startCountdown() {
+ clearInterval(cdTimer);
+ countdown = Math.floor(REFRESH_MS/1000);
+ cdTimer = setInterval(function() {
+ countdown--;
+ document.getElementById('nextUpdateTxt').textContent = 'Next update: ' + countdown + 's';
+ if (countdown <= 0) {
+ clearInterval(cdTimer);
+ document.getElementById('nextUpdateTxt').textContent = 'Updating...';
+ fetchLiveData().then(startCountdown);
+ }
+ }, 1000);
 }
 
-function renderTicker(items) {
-  var el = document.getElementById('ticker');
-  if (!el) return;
-  var all = items.concat(items);
-  var h = '';
-  for (var i = 0; i < all.length; i++) {
-    var t = all[i];
-    h += '<div class="tick"><span class="tick-pair">' + t.pair +
-      '</span><span class="tick-px">' + t.px +
-      '</span><span class="' + (t.up ? 'up' : 'dn') + '">' +
-      (t.up ? '\u25b2' : '\u25bc') + ' ' + t.ch + '</span></div>';
-  }
-  el.innerHTML = h;
+function manualRefresh() {
+ var btn = document.getElementById('refreshBtn');
+ btn.textContent = '⟳ Loading...'; btn.style.pointerEvents='none'; btn.style.opacity='0.6';
+ clearInterval(cdTimer);
+ fetchLiveData().then(function() {
+ startCountdown();
+ btn.textContent = '⟳ Refresh Now'; btn.style.pointerEvents='auto'; btn.style.opacity='1';
+ });
 }
 
-function buildStaticTicker() {
-  renderTicker([
-    {pair:'EUR/USD',px:'1.0850',ch:'+0.0012',up:true},
-    {pair:'GBP/USD',px:'1.2650',ch:'-0.0008',up:false},
-    {pair:'USD/JPY',px:'149.50',ch:'+0.42',up:true},
-    {pair:'AUD/USD',px:'0.6550',ch:'+0.0024',up:true},
-    {pair:'GBP/JPY',px:'189.04',ch:'+0.38',up:true},
-    {pair:'XAU/USD',px:'2345.4',ch:'+8.20',up:true}
-  ]);
+/* ── HEIGHT REPORTER (for WordPress iframe embed) ────────── */
+/* Sends {type:'csm-height', height: N} to match parent page's listener */
+function reportHeight() {
+ var shell = document.querySelector('.pip-calc-shell');
+ if (!shell) return;
+ var height = shell.offsetHeight;
+ if (window.parent && window.parent !== window) {
+ window.parent.postMessage({ type: 'csm-height', height: height + 20 }, '*');
+ }
+}
+if (typeof ResizeObserver !== 'undefined') {
+ var shell = document.querySelector('.pip-calc-shell');
+ if (shell) new ResizeObserver(reportHeight).observe(shell);
+} else {
+ window.addEventListener('load', reportHeight);
+ var _rt; window.addEventListener('resize', function() { clearTimeout(_rt); _rt = setTimeout(reportHeight, 150); });
 }
 
-loadFxData();
-setInterval(loadFxData, 30000);
-
-/* ── Update exchange rate from live data when pair changes ── */
-var origUpdatePair = updatePairInfo;
-updatePairInfo = function() {
-  origUpdatePair();
-  if (!_fxLoaded) return;
-  var sel = document.getElementById('pair');
-  if (!sel) return;
-  var sym = sel.value.replace('/','');
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'forex_data.json?t=' + Date.now(), false);
-  xhr.send();
-  if (xhr.status === 200) {
-    try {
-      var data = JSON.parse(xhr.responseText);
-      var d = data[sym];
-      if (d && d.bid) document.getElementById('exchangeRate').value = Number(d.bid).toFixed(d.digits || 5);
-    } catch(e) {}
-  }
-};
-
-/* ── Init ───────────────────────────────────────────────────── */
-updatePairInfo();
-
-/* ── Iframe Height Sync ───────────────────────────────────── */
-(function() {
-  'use strict';
-  function sendHeight() {
-    var h = document.documentElement.scrollHeight;
-    if (h < 100) return;
-    parent.postMessage({ type: 'csm-height', height: h }, '*');
-  }
-  // Send after load
-  if (document.readyState === 'complete') {
-    sendHeight();
-  } else {
-    window.addEventListener('load', sendHeight);
-  }
-  // Send on resize/content changes
-  if (window.ResizeObserver) {
-    var ro = new ResizeObserver(function() { sendHeight(); });
-    ro.observe(document.documentElement);
-  }
-  // Also send after any DOM mutation (results show/hide, etc.)
-  var mo = new MutationObserver(function() { sendHeight(); });
-  mo.observe(document.body, { childList: true, subtree: true, attributes: false });
-})();
+/* ── BOOT ───────────────────────────────────────────────── */
+fetchLiveData().then(startCountdown);
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"7a49d0b67c134c8a8c36a0b6c2b6c1ad","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
