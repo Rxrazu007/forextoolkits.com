@@ -863,110 +863,69 @@ function resetCalc() {
 
 /* ── Ticker ─────────────────────────────────────────────────── */
 /* ── Live Data (from forex_data.json) ─────────────────────── */
-window._FX = null; // will hold the live forex data
+var _fxData = null;
 
-/* ── Ticker Symbols ─────────────────────────────────────────── */
-const TICKER_SYMS = [
-  'EURUSD','GBPUSD','USDJPY','AUDUSD','USDCHF','USDCAD',
-  'EURGBP','EURJPY','EURCHF','EURAUD','EURCAD','EURNZD',
-  'GBPJPY','GBPCHF','GBPAUD','GBPCAD','GBPNZD',
-  'AUDJPY','AUDCHF','AUDCAD','AUDNZD',
-  'NZDJPY','NZDCHF','NZDCAD','NZDUSD',
-  'CHFJPY','CADJPY','CADCHF','XAUUSD'
-];
+function loadForexData() {
+  var r = new XMLHttpRequest();
+  r.open('GET', '/forex-api/forex_data.json?t=' + (+new Date()), true);
+  r.onload = function() {
+    if (r.status !== 200) return;
+    try {
+      _fxData = JSON.parse(r.responseText);
+    } catch(e) { return; }
 
-function fmtTickerSym(sym) {
-  if (sym === 'XAUUSD') return 'XAU/USD';
-  return sym.slice(0,3) + '/' + sym.slice(3);
-}
-
-/* ── Update exchange rate from live data ──────────────────── */
-function updateLiveRate() {
-  if (!window._FX) return;
-  var sel = document.getElementById('pair');
-  if (!sel) return;
-  var sym = sel.value.replace('/','');
-  var d = window._FX[sym];
-  if (d && d.bid) {
-    document.getElementById('exchangeRate').value = d.bid.toFixed(d.digits || 5);
-  }
-}
-
-/* ── Build Ticker ──────────────────────────────────────────── */
-function buildTickerTicks(items) {
-  var el = document.getElementById('ticker');
-  if (!el || !items.length) return;
-  var all = items.concat(items);
-  el.innerHTML = all.map(function(t) {
-    return '<div class="tick">' +
-      '<span class="tick-pair">' + t.pair + '</span>' +
-      '<span class="tick-px">' + t.px + '</span>' +
-      '<span class="' + (t.up ? 'up' : 'dn') + '">' + (t.up ? '\u25b2' : '\u25bc') + ' ' + t.ch + '</span>' +
-    '</div>';
-  }).join('');
-}
-
-function buildTickerFromData(data) {
-  var items = [];
-  for (var i = 0; i < TICKER_SYMS.length; i++) {
-    var sym = TICKER_SYMS[i];
-    var d = data[sym];
-    if (!d || typeof d.bid !== 'number') continue;
-    var bid = d.bid;
-    var digits = d.digits || 5;
-    var px = bid.toFixed(digits);
-    var ch = '+0.00', up = true;
-    if (d.tf && d.tf.M5 && d.tf.M5.c && d.tf.M5.c.length >= 2) {
-      var closes = d.tf.M5.c;
-      var prev = closes[closes.length - 1];
-      var diff = bid - prev;
-      ch = (diff >= 0 ? '+' : '') + diff.toFixed(digits);
-      up = diff >= 0;
-    }
-    items.push({ pair: fmtTickerSym(sym), px: px, ch: ch, up: up });
-  }
-  if (items.length === 0) {
-    items.push(
-      {pair:'EUR/USD',px:'1.0850',ch:'+0.0012',up:true},
-      {pair:'GBP/USD',px:'1.2650',ch:'-0.0008',up:false},
-      {pair:'USD/JPY',px:'149.50',ch:'+0.42',up:true}
-    );
-  }
-  buildTickerTicks(items);
-}
-
-/* ── Fetch live data & update everything ──────────────────── */
-function fetchForexData(callback) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/forex-api/forex_data.json?t=' + Date.now(), true);
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      try {
-        var data = JSON.parse(xhr.responseText);
-        window._FX = data;
-        buildTickerFromData(data);
-        updateLiveRate();
-        if (callback) callback(null, data);
-      } catch(e) {
-        if (callback) callback(e);
+    // Build ticker
+    var syms = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCHF','USDCAD',
+      'EURGBP','EURJPY','EURCHF','EURAUD','EURCAD','EURNZD',
+      'GBPJPY','GBPCHF','GBPAUD','GBPCAD','GBPNZD',
+      'AUDJPY','AUDCHF','AUDCAD','AUDNZD',
+      'NZDJPY','NZDCHF','NZDCAD','NZDUSD',
+      'CHFJPY','CADJPY','CADCHF','XAUUSD'];
+    var items = [];
+    for (var i = 0; i < syms.length; i++) {
+      var d = _fxData[syms[i]];
+      if (!d || typeof d.bid !== 'number') continue;
+      var pair = syms[i].slice(0,3) + '/' + syms[i].slice(3);
+      if (syms[i] === 'XAUUSD') pair = 'XAU/USD';
+      var px = d.bid.toFixed(d.digits || 5);
+      var ch = '+0.00', up = true;
+      if (d.tf && d.tf.M5 && d.tf.M5.c && d.tf.M5.c.length >= 2) {
+        var c = d.tf.M5.c;
+        var diff = d.bid - c[c.length - 1];
+        ch = (diff >= 0 ? '+' : '') + diff.toFixed(d.digits || 5);
+        up = diff >= 0;
       }
-    } else {
-      if (callback) callback(new Error('HTTP ' + xhr.status));
+      items.push({pair:pair, px:px, ch:ch, up:up});
+    }
+    if (items.length === 0) {
+      items.push({pair:'EUR/USD',px:'1.0850',ch:'+0.0012',up:true});
+    }
+    var el = document.getElementById('ticker');
+    if (el) {
+      var all = items.concat(items);
+      el.innerHTML = all.map(function(t) {
+        return '<div class="tick"><span class="tick-pair">' + t.pair +
+          '</span><span class="tick-px">' + t.px +
+          '</span><span class="' + (t.up ? 'up' : 'dn') + '">' +
+          (t.up ? '\u25b2' : '\u25bc') + ' ' + t.ch + '</span></div>';
+      }).join('');
+    }
+
+    // Update exchange rate for current pair
+    var sel = document.getElementById('pair');
+    if (sel) {
+      var sym = sel.value.replace('/','');
+      var d = _fxData[sym];
+      if (d && d.bid) {
+        document.getElementById('exchangeRate').value = d.bid.toFixed(d.digits || 5);
+      }
     }
   };
-  xhr.onerror = function() {
-    console.warn('Forex data fetch failed');
-    buildTickerFromData({});
-    if (callback) callback(new Error('Network error'));
-  };
-  xhr.send();
+  r.send();
 }
 
-// Initial fetch
-fetchForexData();
-
-// Refresh every 30 seconds
-setInterval(function() { fetchForexData(); }, 30000
+loadForexData();
+setInterval(loadForexData, 30000);
 
 /* ── Init ───────────────────────────────────────────────────── */
 updatePairInfo();
